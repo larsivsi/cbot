@@ -62,4 +62,7 @@ int main(int argc, char **argv)
 		die("connect", err);
 
 	struct recv_data *irc = malloc(sizeof(*irc));
+
+	close(socket_id);
+	return 0;
 }
