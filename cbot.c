@@ -56,7 +56,8 @@ int main(int argc, char **argv)
 	const char *port = argv[4];
 	const char *channel = argv[5];
 
-	int socket_id, err;
+	int socket_id, err, recv_size;
+	char buffer[BUFFER];
 	struct addrinfo hints;
 	struct addrinfo *srv;
 	memset(&hints, 0, sizeof(hints));
@@ -70,10 +71,16 @@ int main(int argc, char **argv)
 	if ((err = connect(socket_id, srv->ai_addr, srv->ai_addrlen)) != 0)
 		die("connect", err);
 
-	if((err = send_str(socket_id, "USER cbotsadasdasd gangbot inC :cbotsadasdasd\nNICK cbotdsadasdasd\nJOIN #loltestcbot")) < 0)
+	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN #%s", user, nick, nick, channel);
+	if ((err = send_str(socket_id, buffer)) < 0)
 		die("send user data", err);
 
 	struct recv_data *irc = malloc(sizeof(*irc));
+	
+	while ((recv_size = recv(socket_id, buffer, BUFFER, 0)) >= 0) {
+		buffer[recv_size] = '\0';
+		printf("%s", buffer);
+	}
 
 	close(socket_id);
 	free(irc);
