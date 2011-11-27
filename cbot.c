@@ -22,9 +22,9 @@ struct recv_data {
 };
 
 // prototypes
-void die(char* msg, int err_code);
+void die(char *msg, int err_code);
 void handle_input(struct recv_data in);
-int send_str(int socket_id, char* msg);
+int send_str(int socket_id, char *msg);
 
 void die(char *msg, int err_code)
 {
@@ -37,7 +37,7 @@ void handle_input(struct recv_data in)
 	printf("%s\n",in.message);
 }
 
-int send_str(int socket_id, char* msg)
+int send_str(int socket_id, char *msg)
 {
 	char send_str[BUFFER];
 	sprintf(send_str, "%s\n", msg);
