@@ -24,7 +24,7 @@ struct recv_data {
 // prototypes
 void die(char* msg, int err_code);
 void handle_input(struct recv_data in);
-void send_str(int socket_id, char* msg);
+int send_str(int socket_id, char* msg);
 
 void die(char *msg, int err_code)
 {
@@ -37,11 +37,11 @@ void handle_input(struct recv_data in)
 	printf("%s\n",in.message);
 }
 
-void send_str(int socket_id, char* msg)
+int send_str(int socket_id, char* msg)
 {
 	char send_str[BUFFER];
 	sprintf(send_str, "%s\n", msg);
-	send(socket_id, send_str, strlen(send_str), 0);
+	return send(socket_id, send_str, strlen(send_str), 0);
 }
 
 int main(int argc, char **argv)
@@ -69,6 +69,9 @@ int main(int argc, char **argv)
 		die("socket", socket_id);
 	if ((err = connect(socket_id, srv->ai_addr, srv->ai_addrlen)) != 0)
 		die("connect", err);
+
+	if((err = send_str(socket_id, "USER cbotsadasdasd gangbot inC :cbotsadasdasd\nNICK cbotdsadasdasd\nJOIN #loltestcbot")) < 0)
+		die("send user data", err);
 
 	struct recv_data *irc = malloc(sizeof(*irc));
 
