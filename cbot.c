@@ -24,6 +24,7 @@ struct recv_data {
 // prototypes
 void die(char* msg, int err_code);
 void handle_input(struct recv_data in);
+void send_str(int socket_id, char* msg);
 
 void die(char *msg, int err_code)
 {
@@ -34,6 +35,13 @@ void die(char *msg, int err_code)
 void handle_input(struct recv_data in)
 {
 	printf("%s\n",in.message);
+}
+
+void send_str(int socket_id, char* msg)
+{
+	char send_str[BUFFER];
+	sprintf(send_str, "%s\n", msg);
+	send(socket_id, send_str, strlen(send_str), 0);
 }
 
 int main(int argc, char **argv)
@@ -65,5 +73,6 @@ int main(int argc, char **argv)
 	struct recv_data *irc = malloc(sizeof(*irc));
 
 	close(socket_id);
+	free(irc);
 	return 0;
 }
