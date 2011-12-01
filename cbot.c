@@ -24,7 +24,6 @@ struct recv_data {
 struct patterns {
 	pcre *privmsg;
 	pcre *kick;
-    pcre *ping;
 };
 
 // prototypes
@@ -40,9 +39,6 @@ void compile_patterns(struct patterns *patterns)
 	char *pattern = ":([^!]+)!([^@]+)@(\\S+)\\sPRIVMSG\\s(\\S+)\\s:([^\\b]+)";
 	if ((patterns->privmsg = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile privmsg", 0);
-    pattern = "PING :(\\S+)";
-    if ((patterns->ping = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile ping", 0);
 }
 
 void die(char *msg, int err_code)
@@ -65,6 +61,7 @@ int send_str(int socket_id, char *msg)
 {
 	char send_str[BUFFER];
 	sprintf(send_str, "%s\n", msg);
+	printf("--> %s", send_str);
 	return send(socket_id, send_str, strlen(send_str), 0);
 }
 
@@ -104,20 +101,17 @@ int main(int argc, char **argv)
 	compile_patterns(patterns);
 
 	while ((recv_size = recv(socket_id, buffer, BUFFER, 0)) >= 0) {
-
-        if (strncmp(buffer, "PING :", 6) == 0) {
-            // turn the ping into a pong :D
-            buffer[1] = 'O';
-		    buffer[recv_size-1] = '\0';
-            send_str(socket_id, buffer);
-            printf(buffer);
-        }
-        else {
-		    //overwrite \n with \0
-		    buffer[recv_size-1] = '\0';
-		    puts(buffer);
-    		parse_input(buffer, irc, patterns);
-        }
+		//overwrite \n with \0
+		buffer[recv_size-1] = '\0';
+		puts(buffer);
+		if (strncmp(buffer, "PING :", 6) == 0) {
+            		// turn the ping into a pong :D
+            		buffer[1] = 'O';
+			send_str(socket_id, buffer);
+		}
+		else {
+			parse_input(buffer, irc, patterns);
+		}
 	}
 
 	close(socket_id);
