@@ -19,14 +19,27 @@ struct recv_data {
 	char server[64];
 	char channel[32];
 	char message[BUFFER];
-	pcre *regex;
+};
+
+struct patterns {
+	pcre *privmsg;
+	pcre *kick;
 };
 
 // prototypes
+void compile_patterns(struct patterns *patterns);
 void die(char *msg, int err_code);
-void handle_input(struct recv_data *in);
-void parse_input(char *msg, struct recv_data *in);
+void parse_input(char *msg, struct recv_data *in, struct patterns *patterns);
 int send_str(int socket_id, char *msg);
+
+void compile_patterns(struct patterns *patterns)
+{
+	const char *pcre_err;
+	int pcre_err_off;
+	char *pattern = ":([^!]+)!([^@]+)@(\S+)\sPRIVMSG\s(\S+)\s:(\B+)";
+	if((patterns->privmsg = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile privmsg", 0);
+}
 
 void die(char *msg, int err_code)
 {
@@ -34,21 +47,12 @@ void die(char *msg, int err_code)
 	exit(1);
 }
 
-void handle_input(struct recv_data *in)
+void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 {
-	printf("%s\n",in->message);
-}
-
-void parse_input(char *msg, struct recv_data *in)
-{
-	int matches = sscanf(msg, ":%[^!]!%[^@]@%s PRIVMSG %s :%512s", in->nick, in->user, in->server, in->channel, in->message);
-	if (matches == 5) {
-		printf("nick: %s\n", in->nick);
-		printf("user: %s\n", in->user);
-		printf("server: %s\n", in->server);
-		printf("channel: %s\n", in->channel);
-		printf("message: %s\n", in->message);
-	}
+	int offsets[6];
+	int offsetcount = 6;
+	offsetcount = pcre_exec(patterns->privmsg, NULL, msg, strlen(msg), 0, 0, offsets, offsetcount);
+	printf("offsetcount: %d\n", offsetcount);
 }
 
 int send_str(int socket_id, char *msg)
@@ -70,9 +74,8 @@ int main(int argc, char **argv)
 	const char *port = argv[4];
 	const char *channel = argv[5];
 
-	int socket_id, err, recv_size, pcre_err_off;
+	int socket_id, err, recv_size;
 	char buffer[BUFFER];
-	const char *pcre_err;
 	struct addrinfo hints;
 	struct addrinfo *srv;
 	memset(&hints, 0, sizeof(hints));
@@ -91,18 +94,18 @@ int main(int argc, char **argv)
 		die("send user data", err);
 
 	struct recv_data *irc = malloc(sizeof(*irc));
-	char *pattern = ":([^!]+)!([^@]+)@(\S+)\sPRIVMSG\s(\S+)\s:(\B+)";
-	irc->regex = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0);
-	
+	struct patterns *patterns = malloc(sizeof(*patterns));	
+	compile_patterns(patterns);
+
 	while ((recv_size = recv(socket_id, buffer, BUFFER, 0)) >= 0) {
 		//overwrite \n with \0
 		buffer[recv_size-1] = '\0';
 		puts(buffer);
-		parse_input(buffer, irc);
-		//handle_input(irc);
+		parse_input(buffer, irc, patterns);
 	}
 
 	close(socket_id);
 	free(irc);
+	free(patterns);
 	return 0;
 }
