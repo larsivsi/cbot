@@ -18,12 +18,12 @@ struct recv_data {
 	char server[64];
 	char channel[32];
 	char message[BUFFER];
-	int is_ready;
 };
 
 // prototypes
 void die(char *msg, int err_code);
-void handle_input(struct recv_data in);
+void handle_input(struct recv_data *in);
+void parse_input(char *msg, struct recv_data *in);
 int send_str(int socket_id, char *msg);
 
 void die(char *msg, int err_code)
@@ -32,9 +32,21 @@ void die(char *msg, int err_code)
 	exit(1);
 }
 
-void handle_input(struct recv_data in)
+void handle_input(struct recv_data *in)
 {
-	printf("%s\n",in.message);
+	printf("%s\n",in->message);
+}
+
+void parse_input(char *msg, struct recv_data *in)
+{
+	int matches = sscanf(msg, ":%[^!]!%[^@]@%s PRIVMSG %s :%512c", in->nick, in->user, in->server, in->channel, in->message);
+	if (matches == 5) {
+		printf("nick: %s\n", in->nick);
+		printf("user: %s\n", in->user);
+		printf("server: %s\n", in->server);
+		printf("channel: %s\n", in->channel);
+		printf("message: %s\n", in->message);
+	}
 }
 
 int send_str(int socket_id, char *msg)
@@ -78,8 +90,11 @@ int main(int argc, char **argv)
 	struct recv_data *irc = malloc(sizeof(*irc));
 	
 	while ((recv_size = recv(socket_id, buffer, BUFFER, 0)) >= 0) {
-		buffer[recv_size] = '\0';
-		printf("%s", buffer);
+		//overwrite \n with \0
+		buffer[recv_size-1] = '\0';
+		puts(buffer);
+		parse_input(buffer, irc);
+		//handle_input(irc);
 	}
 
 	close(socket_id);
