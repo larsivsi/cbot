@@ -36,7 +36,7 @@ void compile_patterns(struct patterns *patterns)
 {
 	const char *pcre_err;
 	int pcre_err_off;
-	char *pattern = ":([^!]+)!([^@]+)@(\S+)\sPRIVMSG\s(\S+)\s:(\B+)";
+	char *pattern = ":([^!]+)!([^@]+)@(\\S+)\\sPRIVMSG\\s(\\S+)\\s:([^\\b]+)";
 	if((patterns->privmsg = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile privmsg", 0);
 }
@@ -49,10 +49,12 @@ void die(char *msg, int err_code)
 
 void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 {
-	int offsets[6];
-	int offsetcount = 6;
+	//TODO: check 30
+	int offsets[30];
+	int offsetcount = 30;
 	offsetcount = pcre_exec(patterns->privmsg, NULL, msg, strlen(msg), 0, 0, offsets, offsetcount);
-	printf("offsetcount: %d\n", offsetcount);
+	if (offsetcount > 0)
+		printf("offsetcount: %d\n", offsetcount);
 }
 
 int send_str(int socket_id, char *msg)
