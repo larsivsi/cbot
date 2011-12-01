@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <pcre.h>
 
 #define BUFFER 512
 
@@ -18,6 +19,7 @@ struct recv_data {
 	char server[64];
 	char channel[32];
 	char message[BUFFER];
+	pcre *regex;
 };
 
 // prototypes
@@ -39,7 +41,7 @@ void handle_input(struct recv_data *in)
 
 void parse_input(char *msg, struct recv_data *in)
 {
-	int matches = sscanf(msg, ":%[^!]!%[^@]@%s PRIVMSG %s :%512c", in->nick, in->user, in->server, in->channel, in->message);
+	int matches = sscanf(msg, ":%[^!]!%[^@]@%s PRIVMSG %s :%512s", in->nick, in->user, in->server, in->channel, in->message);
 	if (matches == 5) {
 		printf("nick: %s\n", in->nick);
 		printf("user: %s\n", in->user);
@@ -68,8 +70,9 @@ int main(int argc, char **argv)
 	const char *port = argv[4];
 	const char *channel = argv[5];
 
-	int socket_id, err, recv_size;
+	int socket_id, err, recv_size, pcre_err_off;
 	char buffer[BUFFER];
+	const char *pcre_err;
 	struct addrinfo hints;
 	struct addrinfo *srv;
 	memset(&hints, 0, sizeof(hints));
@@ -88,6 +91,8 @@ int main(int argc, char **argv)
 		die("send user data", err);
 
 	struct recv_data *irc = malloc(sizeof(*irc));
+	char *pattern = ":([^!]+)!([^@]+)@(\S+)\sPRIVMSG\s(\S+)\s:(\B+)";
+	irc->regex = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0);
 	
 	while ((recv_size = recv(socket_id, buffer, BUFFER, 0)) >= 0) {
 		//overwrite \n with \0
