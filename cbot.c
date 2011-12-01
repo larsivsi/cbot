@@ -53,8 +53,14 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	int offsets[30];
 	int offsetcount = 30;
 	offsetcount = pcre_exec(patterns->privmsg, NULL, msg, strlen(msg), 0, 0, offsets, offsetcount);
-	if (offsetcount > 0)
-		printf("offsetcount: %d\n", offsetcount);
+	if (offsetcount == 6) {
+		pcre_copy_substring(msg, offsets, offsetcount, 1, in->nick, 32);
+		pcre_copy_substring(msg, offsets, offsetcount, 2, in->user, 32);
+		pcre_copy_substring(msg, offsets, offsetcount, 3, in->server, 64);
+		pcre_copy_substring(msg, offsets, offsetcount, 4, in->channel, 32);
+		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, BUFFER);
+	//	printf("user: %s\nserver: %s\nnick: %s\nchannel: %s\nmessage: %s\n", in->user, in->server, in->nick, in->channel, in->message);
+	}
 }
 
 int send_str(int socket_id, char *msg)
