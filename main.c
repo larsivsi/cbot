@@ -1,6 +1,7 @@
 // for getaddrinfo and the likes
 #define _POSIX_C_SOURCE 200112L
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +10,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <pcre.h>
+#include <pthread.h>
 
 #define BUFFER 512
 
@@ -26,11 +28,23 @@ struct patterns {
 	pcre *kick;
 };
 
+
+// Sending stuff
+char *send_buffer = 0;
+int send_buffer_size = 0;
+int send_buffer_used = 0;
+pthread_mutex_t *send_mutex = 0;
+pthread_t *send_thread = 0;
+int send_thread_running = 0;
+
+int socket_id;
+
+
 // prototypes
 void compile_patterns(struct patterns *patterns);
-void die(char *msg, int err_code);
+void die(const char *msg, const char *err);
 void parse_input(char *msg, struct recv_data *in, struct patterns *patterns);
-int send_str(int socket_id, char *msg);
+void send_str(int socket_id, char *msg);
 
 void compile_patterns(struct patterns *patterns)
 {
@@ -41,9 +55,9 @@ void compile_patterns(struct patterns *patterns)
 		die("pcre compile privmsg", 0);
 }
 
-void die(char *msg, int err_code)
+void die(const char *msg, const char *error)
 {
-	fprintf(stderr, "%s: %s\n", msg, gai_strerror(err_code));
+	fprintf(stderr, "%s: %s\n", msg, error);
 	exit(1);
 }
 
@@ -63,12 +77,50 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	}
 }
 
-int send_str(int socket_id, char *msg)
+void send_str(int socket_id, char *msg)
 {
+    pthread_mutex_lock(send_mutex);
+    if (send_buffer == 0) {
+        send_buffer = malloc(BUFFER);
+        send_buffer_size = BUFFER;
+    }
+
+    int length = strlen(msg);
+
+    // Check if we have enough space
+    if (length > send_buffer_size - send_buffer_used) {
+        int new_buffer_size = send_buffer_size + BUFFER;
+        if (!realloc(send_buffer, new_buffer_size)) {
+            die("Unable to allocate more memory for send buffer", strerror(errno));
+        }
+        send_buffer_size = new_buffer_size;
+    }
+
+    memcpy(&send_buffer[send_buffer_used], msg, length);
+    send_buffer_used += length;
+
+    pthread_mutex_unlock(send_mutex);
+
+    // Print out what we have done
 	char send_str[BUFFER];
-	sprintf(send_str, "%s\n", msg);
-	printf("--> %s", send_str);
-	return send(socket_id, send_str, strlen(send_str), 0);
+    sprintf(send_str, "%s\n", msg);
+    printf("--> %s", send_str);
+}
+
+void *send_loop(void *arg) {
+    while (send_thread_running) {
+        pthread_mutex_lock(send_mutex);
+        while (send_buffer_used > 0) {
+            int sent = send(socket_id, send_buffer, send_buffer_used, 0);
+            if (sent == -1) {
+                die("Unable to send", strerror(errno));
+            }
+            send_buffer_used -= sent;
+            printf("%d\n", send_buffer_used);
+        }
+        pthread_mutex_unlock(send_mutex);
+    }
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -83,7 +135,7 @@ int main(int argc, char **argv)
 	const char *port = argv[4];
 	const char *channel = argv[5];
 
-	int socket_id, err, recv_size;
+	int err, recv_size;
 	char buffer[BUFFER];
 	struct addrinfo hints;
 	struct addrinfo *srv;
@@ -91,16 +143,26 @@ int main(int argc, char **argv)
 	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_STREAM;
 
+    // Connect
 	if ((err = getaddrinfo(host, port, &hints, &srv)) != 0)
-		die("getaddrinfo", err);
+		die("getaddrinfo", gai_strerror(err));
 	if ((socket_id = socket(srv->ai_family, srv->ai_socktype, 0)) < 0)
-		die("socket", socket_id);
+		die("socket", gai_strerror(socket_id));
 	if ((err = connect(socket_id, srv->ai_addr, srv->ai_addrlen)) != 0)
-		die("connect", err);
+		die("connect", gai_strerror(err));
+
+    // Create our mutexes
+    send_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+    pthread_mutex_init(send_mutex, 0);
+
+    // Create our sending thread
+    send_thread = (pthread_t*)malloc(sizeof(pthread_t));
+    send_thread_running = 1;
+    pthread_create(send_thread, 0, &send_loop, 0);
+
 
 	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN #%s", user, nick, nick, channel);
-	if ((err = send_str(socket_id, buffer)) < 0)
-		die("send user data", err);
+	send_str(socket_id, buffer);
 
 	struct recv_data *irc = malloc(sizeof(*irc));
 	struct patterns *patterns = malloc(sizeof(*patterns));

@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS+=-std=c99 -Wall -pedantic -O2 -lpcre
+CFLAGS+=-std=c99 -Wall -pedantic -O2 -lpcre -lpthread -g
 
 ALL = cbot
 all: $(ALL)
