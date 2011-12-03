@@ -125,3 +125,5 @@ int main(int argc, char **argv)
 	free(patterns);
 	return 0;
 }
+
+// vim: set formatoptions+=ro cindent
