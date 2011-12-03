@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <pcre.h>
 #include <pthread.h>
+#include <sys/select.h>
 
 #define BUFFER 512
 
@@ -44,7 +45,7 @@ int socket_id;
 void compile_patterns(struct patterns *patterns);
 void die(const char *msg, const char *err);
 void parse_input(char *msg, struct recv_data *in, struct patterns *patterns);
-void send_str(int socket_id, char *msg);
+void send_str(int socket_id, char *msg, int length);
 
 void compile_patterns(struct patterns *patterns)
 {
@@ -77,50 +78,49 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	}
 }
 
-void send_str(int socket_id, char *msg)
+void send_str(int socket_id, char *msg, int length)
 {
-    pthread_mutex_lock(send_mutex);
-    if (send_buffer == 0) {
-        send_buffer = malloc(BUFFER);
-        send_buffer_size = BUFFER;
-    }
+	pthread_mutex_lock(send_mutex);
+	if (send_buffer == 0) {
+		send_buffer = malloc(BUFFER);
+		send_buffer_size = BUFFER;
+	}
 
-    int length = strlen(msg);
+	// Check if we have enough space
+	if (length > send_buffer_size - send_buffer_used) {
+		int new_buffer_size = send_buffer_size + BUFFER;
+		if (!realloc(send_buffer, new_buffer_size)) {
+			die("Unable to allocate more memory for send buffer", strerror(errno));
+		}
+		send_buffer_size = new_buffer_size;
+	}
 
-    // Check if we have enough space
-    if (length > send_buffer_size - send_buffer_used) {
-        int new_buffer_size = send_buffer_size + BUFFER;
-        if (!realloc(send_buffer, new_buffer_size)) {
-            die("Unable to allocate more memory for send buffer", strerror(errno));
-        }
-        send_buffer_size = new_buffer_size;
-    }
+	memcpy(&send_buffer[send_buffer_used], msg, length);
+	send_buffer_used += length;
+	printf("lolbuf:%s\n",send_buffer);
 
-    memcpy(&send_buffer[send_buffer_used], msg, length);
-    send_buffer_used += length;
+	pthread_mutex_unlock(send_mutex);
 
-    pthread_mutex_unlock(send_mutex);
-
-    // Print out what we have done
+	// Print out what we have done
 	char send_str[BUFFER];
-    sprintf(send_str, "%s\n", msg);
-    printf("--> %s", send_str);
+	sprintf(send_str, "%s\n", msg);
+	printf("--> %s", send_str);
 }
 
 void *send_loop(void *arg) {
-    while (send_thread_running) {
-        pthread_mutex_lock(send_mutex);
-        while (send_buffer_used > 0) {
-            int sent = send(socket_id, send_buffer, send_buffer_used, 0);
-            if (sent == -1) {
-                die("Unable to send", strerror(errno));
-            }
-            send_buffer_used -= sent;
-            printf("%d\n", send_buffer_used);
-        }
-        pthread_mutex_unlock(send_mutex);
-    }
-    return 0;
+	while (send_thread_running) {
+		pthread_mutex_lock(send_mutex);
+		while (send_buffer_used > 0) {
+			int sent = send(socket_id, send_buffer, send_buffer_used, 0);
+			if (sent == -1) {
+				die("Unable to send", strerror(errno));
+			}
+			printf("actually sent: %d\n", send_buffer_used);
+			send_buffer_used -= sent;
+		}
+		pthread_mutex_unlock(send_mutex);
+	}
+	return 0;
 }
 
 int main(int argc, char **argv)
@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_STREAM;
 
-    // Connect
+	// Connect
 	if ((err = getaddrinfo(host, port, &hints, &srv)) != 0)
 		die("getaddrinfo", gai_strerror(err));
 	if ((socket_id = socket(srv->ai_family, srv->ai_socktype, 0)) < 0)
@@ -151,31 +151,36 @@ int main(int argc, char **argv)
 	if ((err = connect(socket_id, srv->ai_addr, srv->ai_addrlen)) != 0)
 		die("connect", gai_strerror(err));
 
-    // Create our mutexes
-    send_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-    pthread_mutex_init(send_mutex, 0);
+	// Create our mutexes
+	send_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(send_mutex, 0);
 
-    // Create our sending thread
-    send_thread = (pthread_t*)malloc(sizeof(pthread_t));
-    send_thread_running = 1;
-    pthread_create(send_thread, 0, &send_loop, 0);
+	// Create our sending thread
+	send_thread = (pthread_t*)malloc(sizeof(pthread_t));
+	send_thread_running = 1;
+	pthread_create(send_thread, 0, &send_loop, 0);
 
+	// Select param
+	fd_set socket_set;
+	FD_ZERO(&socket_set);
+	FD_SET(socket_id, &socket_set);
 
-	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN #%s", user, nick, nick, channel);
-	send_str(socket_id, buffer);
+	int len = sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN #%s", user, nick, nick, channel);
+	send_str(socket_id, buffer, len);
 
 	struct recv_data *irc = malloc(sizeof(*irc));
 	struct patterns *patterns = malloc(sizeof(*patterns));
 	compile_patterns(patterns);
 
-	while ((recv_size = recv(socket_id, buffer, BUFFER, 0)) >= 0) {
+	while (select(sizeof(socket_set)*8, &socket_set, 0, 0, 0) != -1) {
+		recv_size = recv(socket_id, buffer, BUFFER, 0);
 		//overwrite \n with \0
 		buffer[recv_size-1] = '\0';
 		puts(buffer);
 		if (strncmp(buffer, "PING :", 6) == 0) {
             		// turn the ping into a pong :D
             		buffer[1] = 'O';
-			send_str(socket_id, buffer);
+			send_str(socket_id, buffer, recv_size);
 		}
 		else {
 			parse_input(buffer, irc, patterns);
@@ -188,4 +193,4 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-// vim: set formatoptions+=ro cindent
+// vim: set formatoptions+=ro cindent expandtab=0
