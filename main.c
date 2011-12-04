@@ -63,6 +63,11 @@ void die(const char *msg, const char *error)
 
 void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 {
+	if (strncmp(msg, "PING :", 6) == 0) {
+		// Turn the ping into a pong :D
+	        msg[1] = 'O';
+		send_str(socket_id, msg);
+	}
 	//TODO: check 30
 	int offsets[30];
 	int offsetcount = 30;
@@ -159,6 +164,7 @@ int main(int argc, char **argv)
 	// Select param
 	fd_set socket_set;
 	FD_ZERO(&socket_set);
+	FD_SET(STDIN_FILENO, &socket_set);
 	FD_SET(socket_id, &socket_set);
 
 	// Join
@@ -170,16 +176,17 @@ int main(int argc, char **argv)
 	compile_patterns(patterns);
 
 	while (select(socket_id+1, &socket_set, 0, 0, 0) != -1) {
-		recv_size = recv(socket_id, buffer, BUFFER-1, 0);
-		// Add \0 to terminate string
-		buffer[recv_size] = '\0';
-		printf(buffer);
-		if (strncmp(buffer, "PING :", 6) == 0) {
-            		// Turn the ping into a pong :D
-            		buffer[1] = 'O';
-			send_str(socket_id, buffer);
+		if (FD_ISSET(STDIN_FILENO, &socket_set)) {
+			char input[BUFFER];
+			fgets(input, BUFFER, stdin);
+			printf("you wrote: %s", input);
 		}
+		// socket
 		else {
+			recv_size = recv(socket_id, buffer, BUFFER-1, 0);
+			// Add \0 to terminate string
+			buffer[recv_size] = '\0';
+			printf(buffer);	
 			parse_input(buffer, irc, patterns);
 		}
 	}
