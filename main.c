@@ -30,7 +30,7 @@ struct patterns {
 };
 
 // Global variables, used by multiple threads
-int socket_id;
+int socket_fd;
 char *send_buffer = 0;
 int send_buffer_size = 0;
 int send_buffer_used = 0;
@@ -44,7 +44,7 @@ int send_thread_running = 0;
 void compile_patterns(struct patterns *patterns);
 void die(const char *msg, const char *err);
 void parse_input(char *msg, struct recv_data *in, struct patterns *patterns);
-void send_str(int socket_id, char *msg);
+void send_str(int socket_fd, char *msg);
 
 void compile_patterns(struct patterns *patterns)
 {
@@ -66,7 +66,7 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	if (strncmp(msg, "PING :", 6) == 0) {
 		// Turn the ping into a pong :D
 	        msg[1] = 'O';
-		send_str(socket_id, msg);
+		send_str(socket_fd, msg);
 	}
 	//TODO: check 30
 	int offsets[30];
@@ -82,7 +82,7 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	}
 }
 
-void send_str(int socket_id, char *msg)
+void send_str(int socket_fd, char *msg)
 {
 	pthread_mutex_lock(send_mutex);
 
@@ -109,7 +109,7 @@ void *send_loop(void *arg) {
 	while (send_thread_running) {
 		pthread_mutex_lock(send_mutex);
 		while (send_buffer_used > 0) {
-			int sent = send(socket_id, send_buffer, send_buffer_used, 0);
+			int sent = send(socket_fd, send_buffer, send_buffer_used, 0);
 			if (sent == -1) {
 				die("Unable to send", strerror(errno));
 			}
@@ -143,9 +143,9 @@ int main(int argc, char **argv)
 	// Connect
 	if ((err = getaddrinfo(host, port, &hints, &srv)) != 0)
 		die("getaddrinfo", gai_strerror(err));
-	if ((socket_id = socket(srv->ai_family, srv->ai_socktype, 0)) < 0)
-		die("socket", gai_strerror(socket_id));
-	if ((err = connect(socket_id, srv->ai_addr, srv->ai_addrlen)) != 0)
+	if ((socket_fd = socket(srv->ai_family, srv->ai_socktype, 0)) < 0)
+		die("socket", gai_strerror(socket_fd));
+	if ((err = connect(socket_fd, srv->ai_addr, srv->ai_addrlen)) != 0)
 		die("connect", gai_strerror(err));
 
 	// Allocate the send buffer
@@ -165,17 +165,17 @@ int main(int argc, char **argv)
 	fd_set socket_set;
 	FD_ZERO(&socket_set);
 	FD_SET(STDIN_FILENO, &socket_set);
-	FD_SET(socket_id, &socket_set);
+	FD_SET(socket_fd, &socket_set);
 
 	// Join
 	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN #%s\n", user, nick, nick, channel);
-	send_str(socket_id, buffer);
+	send_str(socket_fd, buffer);
 
 	struct recv_data *irc = malloc(sizeof(*irc));
 	struct patterns *patterns = malloc(sizeof(*patterns));
 	compile_patterns(patterns);
 
-	while (select(socket_id+1, &socket_set, 0, 0, 0) != -1) {
+	while (select(socket_fd+1, &socket_set, 0, 0, 0) != -1) {
 		if (FD_ISSET(STDIN_FILENO, &socket_set)) {
 			char input[BUFFER];
 			fgets(input, BUFFER, stdin);
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
 		}
 		// socket
 		else {
-			recv_size = recv(socket_id, buffer, BUFFER-1, 0);
+			recv_size = recv(socket_fd, buffer, BUFFER-1, 0);
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';
 			printf(buffer);	
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 		}
 	}
 
-	close(socket_id);
+	close(socket_fd);
 	free(irc);
 	free(patterns);
 	return 0;
