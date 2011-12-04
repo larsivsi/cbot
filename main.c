@@ -220,14 +220,15 @@ int main(int argc, char **argv)
 			char input[BUFFER];
 			fgets(input, BUFFER, stdin);
 			printf("you wrote: %s", input);
+			FD_SET(socket_fd, &socket_set);
 		}
-		// socket
 		else {
 			recv_size = recv(socket_fd, buffer, BUFFER-1, 0);
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';
 			printf(buffer);	
 			parse_input(buffer, irc, patterns);
+			FD_SET(STDIN_FILENO, &socket_set);
 		}
 	}
 
