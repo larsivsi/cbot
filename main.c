@@ -26,6 +26,7 @@ struct recv_data {
 	char message[BUFFER];
 };
 
+
 struct patterns {
 	pcre *privmsg;
 	pcre *kick;
@@ -71,15 +72,15 @@ void compile_patterns(struct patterns *patterns)
 	if ((patterns->kick = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
 		die("pcre compile kick", 0);
 
-    // Urls
-//    pattern = "\\b((?:(?:([a-z][\\w\\.-]+:/{1,3})|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|\\}\\]|[^\\s`!()\\[\\]{};:'\".,<>?])|[a-z0-9.\\-+_]+@[a-z0-9.\\-]+[.][a-z]{1,5}[^\\s/`!()\\[\\]{};:'\".,<>?]))";
-    pattern = "(http:\\/\\/\\S+)";
+	// Urls
+	//    pattern = "\\b((?:(?:([a-z][\\w\\.-]+:/{1,3})|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|\\}\\]|[^\\s`!()\\[\\]{};:'\".,<>?])|[a-z0-9.\\-+_]+@[a-z0-9.\\-]+[.][a-z]{1,5}[^\\s/`!()\\[\\]{};:'\".,<>?]))";
+	pattern = "(http:\\/\\/\\S+)";
 	if ((patterns->url = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile url", 0);
 
-    // HTML page titles
-//    pattern = "<title>(.+)<\\/title>";
-    pattern = "<title>([^<]+)<\\/title>";
+	// HTML page titles
+	//    pattern = "<title>(.+)<\\/title>";
+	pattern = "<title>([^<]+)<\\/title>";
 	if ((patterns->html_title = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile title", 0);
 }
@@ -94,7 +95,7 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 {
 	if (strncmp(msg, "PING :", 6) == 0) {
 		// Turn the ping into a pong :D
-	        msg[1] = 'O';
+		msg[1] = 'O';
 		send_str(socket_fd, msg);
 		return;
 	}
@@ -133,55 +134,57 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 
 }
 
-size_t http_write_callback(void *contents, size_t element_size, size_t num_elements, void *userpointer) {
-    size_t size = element_size * num_elements;
+size_t http_write_callback(void *contents, size_t element_size, size_t num_elements, void *userpointer)
+{
+	size_t size = element_size * num_elements;
 
-    if (size + http_buffer_pos > HTTP_BUFFER) {
-        size = HTTP_BUFFER - http_buffer_pos;
-    }
-    if (size < 0) {
-        return 0;
-    }
+	if (size + http_buffer_pos > HTTP_BUFFER) {
+		size = HTTP_BUFFER - http_buffer_pos;
+	}
+	if (size < 0) {
+		return 0;
+	}
 
-    memcpy(&http_buffer[http_buffer_pos], contents, size);
-    http_buffer_pos += size;
-//    return size;
-    return element_size * num_elements;
+	memcpy(&http_buffer[http_buffer_pos], contents, size);
+	http_buffer_pos += size;
+	//return size;
+	return element_size * num_elements;
 }
 
-void handle_input(struct recv_data *in, struct patterns *patterns) {
-    const char *msg = in->message;
+void handle_input(struct recv_data *in, struct patterns *patterns)
+{
+	const char *msg = in->message;
 	int offsets[30];
 	int offsetcount = 30;
 	offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, offsetcount);
-    if (offsetcount > 0) {
-        for (int i=1; i<offsetcount; i++) {
-            char url[BUFFER];
-		    pcre_copy_substring(msg, offsets, offsetcount, i, url, BUFFER);
-            printf("Got url: %s\n", url);
+	if (offsetcount > 0) {
+		for (int i=1; i<offsetcount; i++) {
+			char url[BUFFER];
+			pcre_copy_substring(msg, offsets, offsetcount, i, url, BUFFER);
+			printf("Got url: %s\n", url);
 
-            http_buffer_pos = 0;
-            CURL *curl_handle = curl_easy_init();
-            curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-            curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, &http_write_callback);
-            curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
-//            curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1);
-            curl_easy_perform(curl_handle);
-            curl_easy_cleanup(curl_handle);
+			http_buffer_pos = 0;
+			CURL *curl_handle = curl_easy_init();
+			curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+			curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, &http_write_callback);
+			curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+			//curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1);
+			curl_easy_perform(curl_handle);
+			curl_easy_cleanup(curl_handle);
 
-            int titles[30];
-	        int titlecount = pcre_exec(patterns->html_title, 0, http_buffer, HTTP_BUFFER, 0, 0, titles, 30);
-            char title[BUFFER];
-            if (titlecount > 0) {
-		        pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER);
-                printf("%s\n", title);
-                char *buf = malloc(strlen(title) + strlen(in->nick) + 10 + 4);
-                sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
-                send_str(socket_fd, buf);
-                free(buf);
-            }
-        }
-    }
+			int titles[30];
+			int titlecount = pcre_exec(patterns->html_title, 0, http_buffer, HTTP_BUFFER, 0, 0, titles, 30);
+			char title[BUFFER];
+			if (titlecount > 0) {
+				pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER);
+				printf("%s\n", title);
+				char *buf = malloc(strlen(title) + strlen(in->nick) + 10 + 4);
+				sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
+				send_str(socket_fd, buf);
+				free(buf);
+			}
+		}
+	}
 }
 
 void send_str(int socket_fd, char *msg)
@@ -277,8 +280,8 @@ int main(int argc, char **argv)
 	printf("nick: %s, user: %s, host: %s, port: %s, channel: %s\n",
 		nick, user, host, port, channel);
 
-    // Set up cURL
-    curl_global_init(CURL_GLOBAL_ALL);
+	// Set up cURL
+	curl_global_init(CURL_GLOBAL_ALL);
 
 	int err, recv_size;
 	char buffer[BUFFER];
@@ -338,13 +341,13 @@ int main(int argc, char **argv)
 			buffer[recv_size] = '\0';
 			printf("%s", buffer);	
 			parse_input(buffer, irc, patterns);
-            handle_input(irc, patterns);
+			handle_input(irc, patterns);
 			FD_SET(STDIN_FILENO, &socket_set);
 		}
 	}
 
 	close(socket_fd);
-    curl_global_cleanup();
+	curl_global_cleanup();
 	free(irc);
 	pcre_free(patterns->privmsg);
 	pcre_free(patterns->kick);
@@ -358,4 +361,4 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-// vim: set formatoptions+=ro cindent noexpandtab
+/* vim: set ts=8 sw=8 tw=0 noexpandtab cindent :*/
