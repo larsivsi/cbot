@@ -238,7 +238,7 @@ int main(int argc, char **argv)
 			recv_size = recv(socket_fd, buffer, BUFFER-1, 0);
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';
-			printf("<-- %s\n", buffer);	
+			printf("%s", buffer);	
 			parse_input(buffer, irc, patterns);
 			FD_SET(STDIN_FILENO, &socket_set);
 		}
