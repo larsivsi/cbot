@@ -57,8 +57,11 @@ void compile_patterns(struct patterns *patterns)
 	const char *pcre_err;
 	int pcre_err_off;
 	char *pattern = ":([^!]+)!([^@]+)@(\\S+)\\sPRIVMSG\\s(\\S+)\\s:([^\\b]+)";
-	if ((patterns->privmsg = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+	if ((patterns->privmsg = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
 		die("pcre compile privmsg", 0);
+	pattern = ":([^!]+)!([^@]+)@(\\S+)\\sKICK\\s(\\S+)\\s(\\S+)\\s:";
+	if ((patterns->kick = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
+		die("pcre compile kick", 0);
 }
 
 void die(const char *msg, const char *error)
@@ -85,8 +88,29 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 3, in->server, 64);
 		pcre_copy_substring(msg, offsets, offsetcount, 4, in->channel, 32);
 		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, BUFFER);
-	//	printf("user: %s\nserver: %s\nnick: %s\nchannel: %s\nmessage: %s\n", in->user, in->server, in->nick, in->channel, in->message);
+		// In case of privmsgs
+		if (strcmp(in->channel, nick) == 0)
+			strcpy(in->channel, in->nick);
+		return;
 	}
+	offsetcount = 30;
+	offsetcount = pcre_exec(patterns->kick, 0, msg, strlen(msg), 0, 0, offsets, offsetcount);
+	if (offsetcount == 6) {
+		pcre_copy_substring(msg, offsets, offsetcount, 1, in->nick, 32);
+		pcre_copy_substring(msg, offsets, offsetcount, 2, in->user, 32);
+		pcre_copy_substring(msg, offsets, offsetcount, 3, in->server, 64);
+		pcre_copy_substring(msg, offsets, offsetcount, 4, in->channel, 32);
+		// User that got kicked
+		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, 32);
+		if (strcmp(in->message, nick) == 0) {
+			printf("Got kicked, rejoining\n");
+			char rejoin[40];
+			sprintf(rejoin, "JOIN #%s\n", channel);
+			send_str(socket_fd, rejoin);
+		}
+		return;
+	}
+
 }
 
 void send_str(int socket_fd, char *msg)
@@ -247,6 +271,7 @@ int main(int argc, char **argv)
 	close(socket_fd);
 	free(irc);
 	pcre_free(patterns->privmsg);
+	pcre_free(patterns->kick);
 	free(patterns);
 	free(nick);
 	free(user);
