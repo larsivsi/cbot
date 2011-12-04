@@ -85,6 +85,14 @@ void compile_patterns(struct patterns *patterns)
 		die("pcre compile title", 0);
 }
 
+void free_patterns(struct patterns *patterns)
+{
+	pcre_free(patterns->privmsg);
+	pcre_free(patterns->kick);
+	pcre_free(patterns->url);
+	pcre_free(patterns->html_title);
+}
+
 void die(const char *msg, const char *error)
 {
 	fprintf(stderr, "%s: %s\n", msg, error);
@@ -101,8 +109,7 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	}
 	//TODO: check 30
 	int offsets[30];
-	int offsetcount = 30;
-	offsetcount = pcre_exec(patterns->privmsg, 0, msg, strlen(msg), 0, 0, offsets, offsetcount);
+	int offsetcount = pcre_exec(patterns->privmsg, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount == 6) {
 		pcre_copy_substring(msg, offsets, offsetcount, 1, in->nick, 32);
 		pcre_copy_substring(msg, offsets, offsetcount, 2, in->user, 32);
@@ -114,8 +121,7 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 			strcpy(in->channel, in->nick);
 		return;
 	}
-	offsetcount = 30;
-	offsetcount = pcre_exec(patterns->kick, 0, msg, strlen(msg), 0, 0, offsets, offsetcount);
+	offsetcount = pcre_exec(patterns->kick, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount == 6) {
 		pcre_copy_substring(msg, offsets, offsetcount, 1, in->nick, 32);
 		pcre_copy_substring(msg, offsets, offsetcount, 2, in->user, 32);
@@ -155,8 +161,7 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 {
 	const char *msg = in->message;
 	int offsets[30];
-	int offsetcount = 30;
-	offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, offsetcount);
+	int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount > 0) {
 		for (int i=1; i<offsetcount; i++) {
 			char url[BUFFER];
@@ -349,8 +354,7 @@ int main(int argc, char **argv)
 	close(socket_fd);
 	curl_global_cleanup();
 	free(irc);
-	pcre_free(patterns->privmsg);
-	pcre_free(patterns->kick);
+	free_patterns(patterns);
 	free(patterns);
 	free(nick);
 	free(user);
