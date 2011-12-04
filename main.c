@@ -29,7 +29,7 @@ struct patterns {
 	pcre *kick;
 };
 
-// Global variables, used by multiple threads
+/// Global variables, used by multiple threads
 int socket_fd;
 char *send_buffer = 0;
 int send_buffer_size = 0;
@@ -38,7 +38,12 @@ pthread_mutex_t *send_mutex = 0;
 pthread_t *send_thread = 0;
 int send_thread_running = 0;
 
-
+// Config options
+char *nick;
+char *user;
+char *host;
+char *port;
+char *channel;
 
 // Prototypes
 void compile_patterns(struct patterns *patterns);
@@ -120,24 +125,59 @@ void *send_loop(void *arg) {
 	return 0;
 }
 
+char *read_line(FILE *file) {
+    char line_buf[BUFFER];
+    fgets(line_buf, BUFFER, file);
+
+    int length = strlen(line_buf);
+    // Remove trailing newline
+    line_buf[length-1] = '\0';
+    char *line = malloc(length);
+    strncpy(line, line_buf, length);
+    return line;
+}
+
+int load_config() {
+    FILE *config_file;
+
+    config_file = fopen("cbot.conf", "r");
+    if (config_file == 0) {
+        printf("Unable to open config file: cbot.conf\n");
+        exit(1);
+    }
+    nick = read_line(config_file); 
+    user = read_line(config_file); 
+    host = read_line(config_file); 
+    port = read_line(config_file); 
+    channel = read_line(config_file); 
+    return 1;
+}
+
+
+
 int main(int argc, char **argv)
 {
-	if (argc != 6) {
+    if (argc == 1) {
+        load_config();
+	} else if (argc == 6) {
+	    nick    = argv[1];
+	    user    = argv[2];
+	    host    = argv[3];
+	    port    = argv[4];
+	    channel = argv[5];
+    } else {
 		printf("Usage: %s nick user host port channel\n", argv[0]);
 		exit(0);
-	}
-	const char *nick = argv[1];
-	const char *user = argv[2];
-	const char *host = argv[3];
-	const char *port = argv[4];
-	const char *channel = argv[5];
+    }
+    printf("nick: %s, user: %s, host: %s, port: %s, channel: %s\n",
+            nick, user, host, port, channel);
 
 	int err, recv_size;
 	char buffer[BUFFER];
 	struct addrinfo hints;
 	struct addrinfo *srv;
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET6;
+	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
 	// Connect
