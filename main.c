@@ -27,6 +27,8 @@ struct recv_data {
 struct patterns {
 	pcre *privmsg;
 	pcre *kick;
+	pcre *url;
+	pcre *html_title;
 };
 
 /// Global variables, used by multiple threads
@@ -56,12 +58,22 @@ void compile_patterns(struct patterns *patterns)
 {
 	const char *pcre_err;
 	int pcre_err_off;
+	// Privmsg
 	char *pattern = ":([^!]+)!([^@]+)@(\\S+)\\sPRIVMSG\\s(\\S+)\\s:([^\\b]+)";
 	if ((patterns->privmsg = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
 		die("pcre compile privmsg", 0);
 	pattern = ":([^!]+)!([^@]+)@(\\S+)\\sKICK\\s(\\S+)\\s(\\S+)\\s:";
+	// Kicks
 	if ((patterns->kick = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
 		die("pcre compile kick", 0);
+	// Urls
+	pattern = "\\b((?:(?:([a-z][\\w\\.-]+:/{1,3})|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|\\}\\]|[^\\s`!()\\[\\]{};:'\".,<>?])|[a-z0-9.\\-+_]+@[a-z0-9.\\-]+[.][a-z]{1,5}[^\\s/`!()\\[\\]{};:'\".,<>?]))";
+	if ((patterns->url = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile url", 0);
+	// HTML page titles
+	pattern = "<title>(.*?)</title>";
+	if ((patterns->html_title = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile title", 0);
 }
 
 void die(const char *msg, const char *error)
@@ -111,6 +123,20 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		return;
 	}
 
+}
+
+void handle_input(struct recv_data *in, struct patterns *patterns) {
+    const char *msg = in->message;
+	int offsets[30];
+	int offsetcount = 30;
+	offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, offsetcount);
+    if (offsetcount > 0) {
+        for (int i=0; i<offsetcount; i++) {
+            char url[BUFFER];
+		    pcre_copy_substring(msg, offsets, offsetcount, i, url, BUFFER);
+            printf("Got url: %s\n", url);
+        }
+    }
 }
 
 void send_str(int socket_fd, char *msg)
@@ -264,6 +290,7 @@ int main(int argc, char **argv)
 			buffer[recv_size] = '\0';
 			printf("%s", buffer);	
 			parse_input(buffer, irc, patterns);
+            handle_input(irc, patterns);
 			FD_SET(STDIN_FILENO, &socket_set);
 		}
 	}
