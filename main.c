@@ -165,20 +165,18 @@ void handle_input(struct recv_data *in, struct patterns *patterns) {
             curl_easy_setopt(curl_handle, CURLOPT_URL, url);
             curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, &http_write_callback);
             curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
-            curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1);
+//            curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1);
             curl_easy_perform(curl_handle);
             curl_easy_cleanup(curl_handle);
 
-            int titles[1];
-	        int titlecount = pcre_exec(patterns->html_title, 0, http_buffer, HTTP_BUFFER, 0, 0, titles, 1);
+            int titles[30];
+	        int titlecount = pcre_exec(patterns->html_title, 0, http_buffer, HTTP_BUFFER, 0, 0, titles, 30);
             char title[BUFFER];
-            printf("%s\n", http_buffer);
-            printf("matches: %d\n", titlecount);
             if (titlecount > 0) {
 		        pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER);
                 printf("%s\n", title);
                 char *buf = malloc(strlen(title) + strlen(in->nick) + 10 + 4);
-                sprintf(buf, "PRIVMSG %s :>> %s\n", in->nick, title);
+                sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
                 send_str(socket_fd, buf);
                 free(buf);
             }
