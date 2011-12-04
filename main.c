@@ -35,6 +35,7 @@ char *send_buffer = 0;
 int send_buffer_size = 0;
 int send_buffer_used = 0;
 pthread_mutex_t *send_mutex = 0;
+pthread_mutex_t *send_sleep_mutex = 0;
 pthread_t *send_thread = 0;
 int send_thread_running = 0;
 
@@ -72,6 +73,7 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		// Turn the ping into a pong :D
 	        msg[1] = 'O';
 		send_str(socket_fd, msg);
+        return;
 	}
 	//TODO: check 30
 	int offsets[30];
@@ -105,6 +107,7 @@ void send_str(int socket_fd, char *msg)
 	send_buffer_used += length;
 
 	pthread_mutex_unlock(send_mutex);
+	pthread_mutex_unlock(send_sleep_mutex);
 
 	// Print out what we have done
 	printf("--> %s", msg);
@@ -112,6 +115,7 @@ void send_str(int socket_fd, char *msg)
 
 void *send_loop(void *arg) {
 	while (send_thread_running) {
+		pthread_mutex_lock(send_sleep_mutex);
 		pthread_mutex_lock(send_mutex);
 		while (send_buffer_used > 0) {
 			int sent = send(socket_fd, send_buffer, send_buffer_used, 0);
@@ -145,6 +149,7 @@ int load_config() {
         printf("Unable to open config file: cbot.conf\n");
         exit(1);
     }
+
     nick = read_line(config_file); 
     user = read_line(config_file); 
     host = read_line(config_file); 
@@ -194,7 +199,9 @@ int main(int argc, char **argv)
 
 	// Create our mutexes
 	send_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+	send_sleep_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(send_mutex, 0);
+	pthread_mutex_init(send_sleep_mutex, 0);
 
 	// Create our sending thread
 	send_thread = (pthread_t*)malloc(sizeof(pthread_t));
@@ -226,7 +233,7 @@ int main(int argc, char **argv)
 			recv_size = recv(socket_fd, buffer, BUFFER-1, 0);
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';
-			printf(buffer);	
+			printf("<-- %s\n", buffer);	
 			parse_input(buffer, irc, patterns);
 			FD_SET(STDIN_FILENO, &socket_set);
 		}
@@ -235,6 +242,12 @@ int main(int argc, char **argv)
 	close(socket_fd);
 	free(irc);
 	free(patterns);
+    free(nick);
+    free(user);
+    free(host);
+    free(port);
+    free(channel);
+
 	return 0;
 }
 
