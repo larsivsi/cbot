@@ -361,4 +361,4 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-/* vim: set ts=8 sw=8 tw=0 noexpandtab cindent :*/
+/* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
