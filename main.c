@@ -299,8 +299,8 @@ int main(int argc, char **argv)
 
 	pthread_mutex_destroy(send_mutex);
 	free(send_mutex);
-	pthread_mutex_destroy(send_sleep_mutex);
-	free(send_sleep_mutex);
+	pthread_cond_destroy(send_data_ready);
+	free(send_data_ready);
 
 	close(socket_fd);
 	curl_global_cleanup();
