@@ -21,4 +21,4 @@ log.o: log.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(ALL) main.o config.o title.o
+	rm -f $(ALL) main.o config.o title.o log.o
