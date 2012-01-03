@@ -9,7 +9,7 @@ PGconn *connection = 0;
 void log_abort()
 {
 	PQfinish(connection);
-	exit(1);
+	connection = 0;
 }
 
 void log_init()
@@ -18,6 +18,7 @@ void log_init()
 	if (PQstatus(connection) != CONNECTION_OK) {
 		printf("Unable to connect to database!");
 		log_abort();
+		return;
 	}
 
 	PGresult *result;
@@ -26,24 +27,28 @@ void log_init()
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
 		printf("Unable to create prepared function (create_nick)!");
 		log_abort();
+		return;
 	}
 
 	result = PQprepare(connection, "log_message", "INSERT INTO logs(nick_id, text, created_at) VALUES ($1, $2, NOW())", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
 		printf("Unable to create prepared function (log_message)!");
 		log_abort();
+		return;
 	}
 
 	result = PQprepare(connection, "update_nick", "UPDATE nicks SET updated_at=NOW(), words=words+$1 WHERE nick=$2", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
 		printf("Unable to create prepared function (update_nick)!");
 		log_abort();
+		return;
 	}
 
 	result = PQprepare(connection, "get_nick_id", "SELECT id FROM nicks WHERE nick=$1", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
 		printf("Unable to create prepared function (get_nick_id)!");
 		log_abort();
+		return;
 	}
 
 	printf(":: Database connected, logging enabled!\n");
@@ -51,6 +56,7 @@ void log_init()
 
 void log_terminate()
 {
+	if (connection == 0) return;
 	PQfinish(connection);
 }
 
@@ -71,6 +77,7 @@ int count_words(const char *string)
 
 void log_message(struct recv_data *in)
 {
+	if (connection == 0) return;
 	if (strcmp(in->nick, "") == 0) return;
 
 	const char *parameters[2];
