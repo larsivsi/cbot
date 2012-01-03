@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS+=-std=c99 -Wall -pedantic -O2 -g
+CFLAGS+=-std=c99 -Wall -pedantic -O2 -g -I/usr/include/postgresql
 LDFLAGS+=-lpcre -lpthread -lcurl -lpq
 
 ALL = cbot
