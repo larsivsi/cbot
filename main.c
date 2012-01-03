@@ -117,7 +117,6 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 	int offsets[30];	
 	// Check URLs
 	int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	printf("offsetcount: %d\n", offsetcount);
 	while (offsets[1] < strlen(msg) && offsetcount > 0) {
 		char url[BUFFER];
 		pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER);
