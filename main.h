@@ -25,6 +25,7 @@ struct patterns {
 	pcre *kick;
 	pcre *url;
 	pcre *html_title;
+	pcre *eightball;
 };
 extern struct patterns *patterns;
 

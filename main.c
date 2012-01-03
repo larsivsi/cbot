@@ -3,6 +3,7 @@
 #include "title.h"
 #include "config.h"
 #include "log.h"
+#include "eightball.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -51,6 +52,10 @@ void compile_patterns(struct patterns *patterns)
 	pattern = "<title>([^<]+)<\\/title>";
 	if ((patterns->html_title = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile title", 0);
+	//Eightball
+	pattern = "!8ball ([^$]+)";
+	if ((patterns->eightball = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile 8ball", 0);
 }
 
 void free_patterns(struct patterns *patterns)
@@ -59,6 +64,7 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->kick);
 	pcre_free(patterns->url);
 	pcre_free(patterns->html_title);
+	pcre_free(patterns->eightball);
 }
 
 void die(const char *msg, const char *error)
@@ -122,6 +128,14 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER);
 		get_title_from_url(in, url);
 		offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), offsets[1], 0, offsets, 30);
+	}
+
+	// 8ball
+	offsetcount = pcre_exec(patterns->eightball, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount > 0) {
+		char arguments[BUFFER];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, arguments, BUFFER);
+		eightball(in, arguments);
 	}
 }
 
