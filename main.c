@@ -201,6 +201,7 @@ int main(int argc, char **argv)
 		die("socket", gai_strerror(socket_fd));
 	if ((err = connect(socket_fd, srv->ai_addr, srv->ai_addrlen)) != 0)
 		die("connect", gai_strerror(err));
+	freeaddrinfo(srv);
 
 	// Allocate the send buffer
 	send_buffer = malloc(BUFFER);
@@ -256,12 +257,24 @@ int main(int argc, char **argv)
 		}
 	}
 
+	send_thread_running = 0;
+	pthread_mutex_unlock(send_mutex);
+	pthread_mutex_unlock(send_sleep_mutex);
+	pthread_join(*send_thread, 0);
+	free(send_thread);
+
 	close(socket_fd);
 	curl_global_cleanup();
 	free(irc);
-	free(config);
 	free_patterns(patterns);
 	free(patterns);
+	free(config->nick);
+	free(config->user);
+	free(config->host);
+	free(config->port);
+	free(config->channel);
+	free(config->db_connection_string);
+	free(config);
 
 	log_terminate();
 
