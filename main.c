@@ -241,6 +241,9 @@ int main(int argc, char **argv)
 	FD_SET(STDIN_FILENO, &socket_set);
 	FD_SET(socket_fd, &socket_set);
 
+	// Set rand seed
+	srand(time(NULL));
+
 	// Join
 	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN #%s\n",
 		config->user, config->nick, config->nick, config->channel);
