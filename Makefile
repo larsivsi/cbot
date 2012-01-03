@@ -1,9 +1,18 @@
 CC=gcc
-CFLAGS+=-std=c99 -Wall -pedantic -O2 -lpcre -lpthread -lcurl -g
+CFLAGS+=-std=c99 -Wall -pedantic -O2 -g
+LDFLAGS+=-lpcre -lpthread -lcurl 
 
 ALL = cbot
 all: $(ALL)
-cbot: main.c
-	$(CC) $(CFLAGS) main.c -o cbot
+
+cbot: main.o title.o
+	$(CC) $(LDFLAGS) -o $@ $^
+
+main.o: main.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+title.o: title.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 clean:
-	rm -f $(ALL)
+	rm -f $(ALL) main.o title.o

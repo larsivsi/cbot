@@ -1,5 +1,6 @@
-// For getaddrinfo and the likes
-#define _POSIX_C_SOURCE 200112L
+#include "main.h"
+
+#include "title.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -9,42 +10,19 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include <pcre.h>
-#include <pthread.h>
 #include <sys/select.h>
 #include <curl/curl.h>
-
-#define BUFFER 512
-#define HTTP_BUFFER 10240 //10kb http buffer
-
-// Structs
-struct recv_data {
-	char nick[32];
-	char user[32];
-	char server[64];
-	char channel[32];
-	char message[BUFFER];
-};
-
-
-struct patterns {
-	pcre *privmsg;
-	pcre *kick;
-	pcre *url;
-	pcre *html_title;
-};
 
 /// Global variables, used by multiple threads
 int socket_fd;
 char *send_buffer = 0;
-char http_buffer[HTTP_BUFFER];
-size_t http_buffer_pos;
 size_t send_buffer_size = 0;
 size_t send_buffer_used = 0;
 pthread_mutex_t *send_mutex = 0;
 pthread_mutex_t *send_sleep_mutex = 0;
 pthread_t *send_thread = 0;
 int send_thread_running = 0;
+struct patterns *patterns;
 
 // Config options
 char *nick;
@@ -53,11 +31,6 @@ char *host;
 char *port;
 char *channel;
 
-// Prototypes
-void compile_patterns(struct patterns *patterns);
-void die(const char *msg, const char *err);
-void parse_input(char *msg, struct recv_data *in, struct patterns *patterns);
-void send_str(int socket_fd, char *msg);
 
 void compile_patterns(struct patterns *patterns)
 {
@@ -104,7 +77,7 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	if (strncmp(msg, "PING :", 6) == 0) {
 		// Turn the ping into a pong :D
 		msg[1] = 'O';
-		send_str(socket_fd, msg);
+		send_str(msg);
 		return;
 	}
 	//TODO: check 30
@@ -133,73 +106,19 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 			printf("Got kicked, rejoining\n");
 			char rejoin[40];
 			sprintf(rejoin, "JOIN #%s\n", channel);
-			send_str(socket_fd, rejoin);
+			send_str(rejoin);
 		}
 		return;
 	}
 
 }
 
-size_t http_write_callback(void *contents, size_t element_size, size_t num_elements, void *userpointer)
-{
-	size_t size = element_size * num_elements;
-
-	if (size + http_buffer_pos > HTTP_BUFFER) {
-		size = HTTP_BUFFER - http_buffer_pos;
-	}
-
-	if (size < 0) {
-		return 0;
-	}
-
-	memcpy(&http_buffer[http_buffer_pos], contents, size);
-	http_buffer_pos += size;
-	return element_size * num_elements;
-}
-
-void strip_newlines(char *str)
-{
-	for (int i=0; i<strlen(str); i++) if (str[i] == '\n') str[i] = ' ';
-}
-
 void handle_input(struct recv_data *in, struct patterns *patterns)
 {
-	const char *msg = in->message;
-	printf("trololo: %s\n", in->message);
-	int offsets[30];
-	int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	if (offsetcount > 0) {
-		for (int i=1; i<offsetcount; i++) {
-			char url[BUFFER];
-			pcre_copy_substring(msg, offsets, offsetcount, i, url, BUFFER);
-			printf("Got url: %s\n", url);
-
-			http_buffer_pos = 0;
-			CURL *curl_handle = curl_easy_init();
-			curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-			curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, &http_write_callback);
-			curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
-			//curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1);
-			curl_easy_perform(curl_handle);
-			curl_easy_cleanup(curl_handle);
-
-			int titles[30];
-			int titlecount = pcre_exec(patterns->html_title, 0, http_buffer, HTTP_BUFFER, 0, 0, titles, 30);
-			char title[BUFFER];
-			if (titlecount > 0) {
-				pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER);
-				strip_newlines(title);
-				printf("%s\n", title);
-				char *buf = malloc(strlen(title) + strlen(in->nick) + 10 + 4);
-				sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
-				send_str(socket_fd, buf);
-				free(buf);
-			}
-		}
-	}
+	check_for_url(in);
 }
 
-void send_str(int socket_fd, char *msg)
+void send_str(char *msg)
 {
 	pthread_mutex_lock(send_mutex);
 
@@ -334,10 +253,10 @@ int main(int argc, char **argv)
 
 	// Join
 	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN #%s\n", user, nick, nick, channel);
-	send_str(socket_fd, buffer);
+	send_str(buffer);
 
 	struct recv_data *irc = malloc(sizeof(*irc));
-	struct patterns *patterns = malloc(sizeof(*patterns));
+	patterns = malloc(sizeof(*patterns));
 	compile_patterns(patterns);
 
 	while (select(socket_fd+1, &socket_set, 0, 0, 0) != -1) {
