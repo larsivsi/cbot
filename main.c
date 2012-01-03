@@ -15,7 +15,7 @@
 #include <curl/curl.h>
 
 #define BUFFER 512
-#define HTTP_BUFFER 1024
+#define HTTP_BUFFER 10240 //10kb http buffer
 
 // Structs
 struct recv_data {
@@ -147,19 +147,25 @@ size_t http_write_callback(void *contents, size_t element_size, size_t num_eleme
 	if (size + http_buffer_pos > HTTP_BUFFER) {
 		size = HTTP_BUFFER - http_buffer_pos;
 	}
+
 	if (size < 0) {
 		return 0;
 	}
 
 	memcpy(&http_buffer[http_buffer_pos], contents, size);
 	http_buffer_pos += size;
-	//return size;
 	return element_size * num_elements;
+}
+
+void strip_newlines(char *str)
+{
+	for (int i=0; i<strlen(str); i++) if (str[i] == '\n') str[i] = ' ';
 }
 
 void handle_input(struct recv_data *in, struct patterns *patterns)
 {
 	const char *msg = in->message;
+	printf("trololo: %s\n", in->message);
 	int offsets[30];
 	int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount > 0) {
@@ -182,6 +188,7 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 			char title[BUFFER];
 			if (titlecount > 0) {
 				pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER);
+				strip_newlines(title);
 				printf("%s\n", title);
 				char *buf = malloc(strlen(title) + strlen(in->nick) + 10 + 4);
 				sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
