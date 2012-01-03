@@ -35,7 +35,9 @@ int load_config(void)
 	config->host = read_line(config_file); 
 	config->port = read_line(config_file); 
 	config->channel = read_line(config_file); 
+	config->db_connection_string = read_line(config_file);
 
 	fclose(config_file);
 	return 1;
 }
+/* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/

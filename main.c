@@ -2,6 +2,7 @@
 
 #include "title.h"
 #include "config.h"
+#include "log.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -110,6 +111,8 @@ int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 
 void handle_input(struct recv_data *in, struct patterns *patterns)
 {
+	log_message(in);
+
 	const char *msg = in->message;
 	int offsets[30];	
 	// Check URLs
@@ -179,6 +182,9 @@ int main(int argc, char **argv)
 
 	// Set up cURL
 	curl_global_init(CURL_GLOBAL_ALL);
+
+	// Set up db connection for logging
+	log_init();
 
 	int err, recv_size;
 	char buffer[BUFFER];
@@ -251,6 +257,8 @@ int main(int argc, char **argv)
 	free(config);
 	free_patterns(patterns);
 	free(patterns);
+
+	log_terminate();
 
 	return 0;
 }
