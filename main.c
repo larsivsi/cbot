@@ -225,7 +225,10 @@ int main(int argc, char **argv)
 		if (FD_ISSET(STDIN_FILENO, &socket_set)) {
 			char input[BUFFER];
 			fgets(input, BUFFER, stdin);
-			printf("you wrote: %s", input);
+			if (strcmp(input, "quit\n") == 0) {
+				printf("Bye!\n");
+				break;
+			}
 			FD_SET(socket_fd, &socket_set);
 		}
 		else {
