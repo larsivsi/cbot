@@ -35,5 +35,7 @@ int load_config(void)
 	config->host = read_line(config_file); 
 	config->port = read_line(config_file); 
 	config->channel = read_line(config_file); 
+
+	fclose(config_file);
 	return 1;
 }
