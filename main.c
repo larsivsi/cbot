@@ -22,7 +22,7 @@ char *send_buffer = 0;
 size_t send_buffer_size = 0;
 size_t send_buffer_used = 0;
 pthread_mutex_t *send_mutex = 0;
-pthread_mutex_t *send_sleep_mutex = 0;
+pthread_cond_t *send_data_ready = 0;
 pthread_t *send_thread = 0;
 int send_thread_running = 0;
 
@@ -156,8 +156,9 @@ void send_str(char *msg)
 	memcpy(&send_buffer[send_buffer_used], msg, length);
 	send_buffer_used += length;
 
+	pthread_cond_signal(send_data_ready);
+
 	pthread_mutex_unlock(send_mutex);
-	pthread_mutex_unlock(send_sleep_mutex);
 
 	// Print out what we have done
 	printf("--> %s", msg);
@@ -165,9 +166,11 @@ void send_str(char *msg)
 
 void *send_loop(void *arg)
 {
+	// To make sure the send thread reaches wait() before the first signal()
+	pthread_mutex_unlock(send_mutex);
+	pthread_mutex_lock(send_mutex);
 	while (send_thread_running) {
-		pthread_mutex_lock(send_sleep_mutex);
-		pthread_mutex_lock(send_mutex);
+		pthread_cond_wait(send_data_ready, send_mutex);
 		while (send_buffer_used > 0) {
 			int sent = send(socket_fd, send_buffer, send_buffer_used, 0);
 			if (sent == -1) {
@@ -175,7 +178,6 @@ void *send_loop(void *arg)
 			}
 			send_buffer_used -= sent;
 		}
-		pthread_mutex_unlock(send_mutex);
 	}
 	return 0;
 }
@@ -222,14 +224,16 @@ int main(int argc, char **argv)
 
 	// Create our mutexes
 	send_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
-	send_sleep_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
+	send_data_ready = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
 	pthread_mutex_init(send_mutex, 0);
-	pthread_mutex_init(send_sleep_mutex, 0);
+	pthread_cond_init(send_data_ready, 0);
 
 	// Create our sending thread
 	send_thread = (pthread_t*)malloc(sizeof(pthread_t));
 	send_thread_running = 1;
 	pthread_create(send_thread, 0, &send_loop, 0);
+	//TODO: Find a better way of making send_thread reach wait() before the first signal()
+	pthread_mutex_lock(send_mutex);
 
 	// Select param
 	fd_set socket_set;
@@ -272,7 +276,6 @@ int main(int argc, char **argv)
 
 	send_thread_running = 0;
 	pthread_mutex_unlock(send_mutex);
-	pthread_mutex_unlock(send_sleep_mutex);
 	pthread_join(*send_thread, 0);
 	free(send_thread);
 
