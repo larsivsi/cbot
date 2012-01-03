@@ -66,13 +66,14 @@ void die(const char *msg, const char *error)
 	exit(1);
 }
 
-void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
+// Returns 1 on privmsg, 0 otherwise
+int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 {
 	if (strncmp(msg, "PING :", 6) == 0) {
 		// Turn the ping into a pong :D
 		msg[1] = 'O';
 		send_str(msg);
-		return;
+		return 0;
 	}
 	//TODO: check 30
 	int offsets[30];
@@ -86,7 +87,7 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		// In case of privmsgs
 		if (strcmp(in->channel, config->nick) == 0)
 			strcpy(in->channel, in->nick);
-		return;
+		return 1;
 	}
 	offsetcount = pcre_exec(patterns->kick, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount == 6) {
@@ -102,9 +103,9 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 			sprintf(rejoin, "JOIN #%s\n", config->channel);
 			send_str(rejoin);
 		}
-		return;
+		return 0;
 	}
-
+	return 0;
 }
 
 void handle_input(struct recv_data *in, struct patterns *patterns)
@@ -227,8 +228,9 @@ int main(int argc, char **argv)
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';
 			printf("%s", buffer);	
-			parse_input(buffer, irc, patterns);
-			handle_input(irc, patterns);
+			// Only handle privmsg
+			if (parse_input(buffer, irc, patterns))
+				handle_input(irc, patterns);
 			FD_SET(STDIN_FILENO, &socket_set);
 		}
 	}

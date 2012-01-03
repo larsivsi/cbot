@@ -31,7 +31,7 @@ extern struct patterns *patterns;
 // Prototypes
 void compile_patterns(struct patterns *patterns);
 void die(const char *msg, const char *err);
-void parse_input(char *msg, struct recv_data *in, struct patterns *patterns);
+int parse_input(char *msg, struct recv_data *in, struct patterns *patterns);
 void send_str(char *msg);
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
