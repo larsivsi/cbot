@@ -282,9 +282,15 @@ int main(int argc, char **argv)
 	pthread_join(*send_thread, 0);
 	free(send_thread);
 
+	pthread_mutex_destroy(send_mutex);
+	free(send_mutex);
+	pthread_mutex_destroy(send_sleep_mutex);
+	free(send_sleep_mutex);
+
 	close(socket_fd);
 	curl_global_cleanup();
 	free(irc);
+	free(send_buffer);
 	free_patterns(patterns);
 	free(patterns);
 	free(config->nick);
@@ -296,6 +302,8 @@ int main(int argc, char **argv)
 	free(config);
 
 	log_terminate();
+
+	curl_global_cleanup();
 
 	return 0;
 }
