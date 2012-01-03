@@ -52,10 +52,14 @@ void compile_patterns(struct patterns *patterns)
 	pattern = "<title>([^<]+)<\\/title>";
 	if ((patterns->html_title = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile title", 0);
-	//Eightball
+	// Eightball
 	pattern = "!8ball ([^$]+)";
 	if ((patterns->eightball = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile 8ball", 0);
+	// Timer
+	pattern = "!timer (\\d+)";
+	if ((patterns->timer = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile timer", 0);
 }
 
 void free_patterns(struct patterns *patterns)
@@ -65,6 +69,7 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->url);
 	pcre_free(patterns->html_title);
 	pcre_free(patterns->eightball);
+	pcre_free(patterns->timer);
 }
 
 void die(const char *msg, const char *error)
@@ -136,6 +141,16 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 		char arguments[BUFFER];
 		pcre_copy_substring(msg, offsets, offsetcount, 1, arguments, BUFFER);
 		eightball(in, arguments);
+	}
+
+	// Timer
+	offsetcount = pcre_exec(patterns->timer, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount > 0) {
+		// 10 byte should suffice
+		char time[10];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, time, 10);
+		int time = atoi(time)*60;
+		set_timer(in->nick, in->channel, time);
 	}
 }
 
