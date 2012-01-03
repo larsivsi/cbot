@@ -237,8 +237,10 @@ int main(int argc, char **argv)
 			char input[BUFFER];
 			fgets(input, BUFFER, stdin);
 			if (strcmp(input, "quit\n") == 0) {
-				printf("Bye!\n");
+				printf(">> Bye!\n");
 				break;
+			} else {
+				printf(">> Unrecognized command. Try 'quit'\n");
 			}
 			FD_SET(socket_fd, &socket_set);
 		}
