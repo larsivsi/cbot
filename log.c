@@ -25,31 +25,39 @@ void log_init()
 
 	result = PQprepare(connection, "create_nick", "INSERT INTO nicks(nick, name, created_at, updated_at, words) VALUES ($1, '', NOW(), NOW(), 0) RETURNING id", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
 		printf("Unable to create prepared function (create_nick)!");
 		log_abort();
 		return;
 	}
+	PQclear(result);
 
 	result = PQprepare(connection, "log_message", "INSERT INTO logs(nick_id, text, created_at) VALUES ($1, $2, NOW())", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
 		printf("Unable to create prepared function (log_message)!");
 		log_abort();
 		return;
 	}
+	PQclear(result);
 
 	result = PQprepare(connection, "update_nick", "UPDATE nicks SET updated_at=NOW(), words=words+$1 WHERE nick=$2", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
 		printf("Unable to create prepared function (update_nick)!");
 		log_abort();
 		return;
 	}
+	PQclear(result);
 
 	result = PQprepare(connection, "get_nick_id", "SELECT id FROM nicks WHERE nick=$1", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
 		printf("Unable to create prepared function (get_nick_id)!");
 		log_abort();
 		return;
 	}
+	PQclear(result);
 
 	printf(":: Database connected, logging enabled!\n");
 }
@@ -81,26 +89,27 @@ void log_message(struct recv_data *in)
 	if (strcmp(in->nick, "") == 0) return;
 
 	const char *parameters[2];
-	PGresult *result;
+	PGresult *nickResult, *logResult, *wordResult;
 
 	parameters[0] = in->nick;
-	result = PQexecPrepared(connection, "get_nick_id", 1, parameters, 0, 0, 0);
-	if (PQresultStatus(result) != PGRES_TUPLES_OK) {
+	nickResult = PQexecPrepared(connection, "get_nick_id", 1, parameters, 0, 0, 0);
+	if (PQresultStatus(nickResult) != PGRES_TUPLES_OK) {
 		printf("Unable to get nick id from database!");
 		return;
 	}
-	if (PQntuples(result) == 0) { //nick doesn't exist, create it
-		result = PQexecPrepared(connection, "create_nick", 1, parameters, 0, 0, 0);
-		if (PQresultStatus(result) != PGRES_TUPLES_OK) {
+	if (PQntuples(nickResult) == 0) { //nick doesn't exist, create it
+		PQclear(nickResult);
+		nickResult = PQexecPrepared(connection, "create_nick", 1, parameters, 0, 0, 0);
+		if (PQresultStatus(nickResult) != PGRES_TUPLES_OK) {
 			printf("Unable to create nick in database! (%s)\n",  PQerrorMessage(connection));
 			return;
 		}
 	}
 
-	parameters[0] = PQgetvalue(result, 0, 0);//nick_id
+	parameters[0] = PQgetvalue(nickResult, 0, 0);//nick_id
 	parameters[1] = in->message;
-	result = PQexecPrepared(connection, "log_message", 2, parameters, 0, 0, 0);
-	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+	logResult = PQexecPrepared(connection, "log_message", 2, parameters, 0, 0, 0);
+	if (PQresultStatus(logResult) != PGRES_COMMAND_OK) {
 		printf("Unable to log message in database (%s)!\n", PQerrorMessage(connection));
 		return;
 	}
@@ -109,12 +118,16 @@ void log_message(struct recv_data *in)
 	sprintf(numwords_buf, "%d", count_words(in->message));
 	parameters[0] = numwords_buf;
 	parameters[1] = in->nick;
-	result = PQexecPrepared(connection, "update_nick", 2, parameters, 0, 0, 0);
-	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+	wordResult = PQexecPrepared(connection, "update_nick", 2, parameters, 0, 0, 0);
+	if (PQresultStatus(wordResult) != PGRES_COMMAND_OK) {
 		printf("Unable to log message in database (%s)!\n", PQerrorMessage(connection));
 		return;
 	}
 
+
+	PQclear(nickResult);
+	PQclear(logResult);
+	PQclear(wordResult);
 
 	free(numwords_buf);
 
