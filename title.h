@@ -3,6 +3,6 @@
 
 struct recv_data; // defined in main.h
 
-void check_for_url(struct recv_data *in);
+void get_title_from_url(struct recv_data *in, const char *url);
 
 #endif//TITLE_H
