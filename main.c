@@ -57,7 +57,7 @@ void compile_patterns(struct patterns *patterns)
 	if ((patterns->eightball = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile 8ball", 0);
 	// Timer
-	pattern = "!timer (\\d+)";
+	pattern = "!timer (\\d{1,4})";
 	if ((patterns->timer = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile timer", 0);
 }
@@ -146,11 +146,11 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 	// Timer
 	offsetcount = pcre_exec(patterns->timer, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount > 0) {
-		// 10 byte should suffice
-		char time[10];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, time, 10);
-		int time = atoi(time)*60;
-		set_timer(in->nick, in->channel, time);
+		// We limit at 4 digits
+		char time[4];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, time, 4);
+		int seconds = atoi(time)*60;
+		set_timer(in->nick, in->channel, seconds);
 	}
 }
 
