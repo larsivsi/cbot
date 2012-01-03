@@ -1,6 +1,7 @@
 #include "main.h"
 
 #include "title.h"
+#include "config.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -22,15 +23,8 @@ pthread_mutex_t *send_mutex = 0;
 pthread_mutex_t *send_sleep_mutex = 0;
 pthread_t *send_thread = 0;
 int send_thread_running = 0;
+
 struct patterns *patterns;
-
-// Config options
-char *nick;
-char *user;
-char *host;
-char *port;
-char *channel;
-
 
 void compile_patterns(struct patterns *patterns)
 {
@@ -90,7 +84,7 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 4, in->channel, 32);
 		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, BUFFER);
 		// In case of privmsgs
-		if (strcmp(in->channel, nick) == 0)
+		if (strcmp(in->channel, config->nick) == 0)
 			strcpy(in->channel, in->nick);
 		return;
 	}
@@ -102,10 +96,10 @@ void parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 4, in->channel, 32);
 		// User that got kicked
 		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, 32);
-		if (strcmp(in->message, nick) == 0) {
+		if (strcmp(in->message, config->nick) == 0) {
 			printf("Got kicked, rejoining\n");
 			char rejoin[40];
-			sprintf(rejoin, "JOIN #%s\n", channel);
+			sprintf(rejoin, "JOIN #%s\n", config->channel);
 			send_str(rejoin);
 		}
 		return;
@@ -159,57 +153,18 @@ void *send_loop(void *arg)
 	return 0;
 }
 
-char *read_line(FILE *file)
-{
-	char line_buf[BUFFER];
-	fgets(line_buf, BUFFER, file);
-
-	int length = strlen(line_buf);
-	// Remove trailing newline
-	line_buf[length-1] = '\0';
-	char *line = malloc(length);
-	strncpy(line, line_buf, length);
-	return line;
-}
-
-int load_config()
-{
-	FILE *config_file;
-
-	config_file = fopen("cbot.conf", "r");
-	if (config_file == 0) {
-		printf("Unable to open config file: cbot.conf\n");
-		exit(1);
-	}
-
-	nick = read_line(config_file); 
-	user = read_line(config_file); 
-	host = read_line(config_file); 
-	port = read_line(config_file); 
-	channel = read_line(config_file); 
-	return 1;
-}
-
-
-
 int main(int argc, char **argv)
 {
+	config = malloc(sizeof(*config));
 	if (argc == 1) {
 		load_config();
 	}
-	else if (argc == 6) {
-		nick    = argv[1];
-		user    = argv[2];
-		host    = argv[3];
-		port    = argv[4];
-		channel = argv[5];
-	}
 	else {
-		printf("Usage: %s nick user host port channel\n", argv[0]);
+		printf("Usage: %s\n", argv[0]);
 		exit(0);
 	}
 	printf("nick: %s, user: %s, host: %s, port: %s, channel: %s\n",
-		nick, user, host, port, channel);
+		config->nick, config->user, config->host, config->port, config->channel);
 
 	// Set up cURL
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -223,7 +178,7 @@ int main(int argc, char **argv)
 	hints.ai_socktype = SOCK_STREAM;
 
 	// Connect
-	if ((err = getaddrinfo(host, port, &hints, &srv)) != 0)
+	if ((err = getaddrinfo(config->host, config->port, &hints, &srv)) != 0)
 		die("getaddrinfo", gai_strerror(err));
 	if ((socket_fd = socket(srv->ai_family, srv->ai_socktype, 0)) < 0)
 		die("socket", gai_strerror(socket_fd));
@@ -252,7 +207,8 @@ int main(int argc, char **argv)
 	FD_SET(socket_fd, &socket_set);
 
 	// Join
-	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN #%s\n", user, nick, nick, channel);
+	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN #%s\n",
+		config->user, config->nick, config->nick, config->channel);
 	send_str(buffer);
 
 	struct recv_data *irc = malloc(sizeof(*irc));
@@ -280,13 +236,9 @@ int main(int argc, char **argv)
 	close(socket_fd);
 	curl_global_cleanup();
 	free(irc);
+	free(config);
 	free_patterns(patterns);
 	free(patterns);
-	free(nick);
-	free(user);
-	free(host);
-	free(port);
-	free(channel);
 
 	return 0;
 }
