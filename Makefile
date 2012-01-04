@@ -5,7 +5,7 @@ LDFLAGS+=-lpcre -lpthread -lcurl -lpq
 ALL = cbot
 all: $(ALL)
 
-cbot: main.o config.o title.o log.o eightball.o
+cbot: main.o config.o title.o log.o eightball.o timer.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 main.o: main.c
@@ -21,6 +21,9 @@ log.o: log.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 eightball.o: eightball.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+timer.o: timer.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
