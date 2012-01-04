@@ -51,7 +51,7 @@ void get_title_from_url(struct recv_data *in, const char *url)
 		pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER);
 		strip_newlines(title);
 		printf("%s\n", title);
-		char *buf = malloc(strlen(title) + strlen(in->nick) + 10 + 4);
+		char *buf = malloc(strlen(in->channel) + strlen(title) + 10 + 4);
 		sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
 		send_str(buf);
 		free(buf);
