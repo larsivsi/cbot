@@ -293,6 +293,7 @@ int main(int argc, char **argv)
 	}
 
 	send_thread_running = 0;
+	pthread_cond_signal(send_data_ready);
 	pthread_mutex_unlock(send_mutex);
 	pthread_join(*send_thread, 0);
 	free(send_thread);
