@@ -1,4 +1,4 @@
-Needed packages:
+Required packages:
 libpcre3
 libpcre3-dev
 libcurl4-openssl-dev
