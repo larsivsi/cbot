@@ -27,4 +27,4 @@ timer.o: timer.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(ALL) main.o config.o title.o log.o eightball.o
+	rm -f $(ALL) main.o config.o title.o log.o eightball.o timer.o
