@@ -23,6 +23,7 @@ size_t send_buffer_size = 0;
 size_t send_buffer_used = 0;
 pthread_mutex_t *send_mutex = 0;
 pthread_cond_t *send_data_ready = 0;
+pthread_barrier_t *startup_barr = 0;
 pthread_t *send_thread = 0;
 int send_thread_running = 0;
 
@@ -181,9 +182,9 @@ void send_str(char *msg)
 
 void *send_loop(void *arg)
 {
-	// To make sure the send thread reaches wait() before the first signal()
-	pthread_mutex_unlock(send_mutex);
 	pthread_mutex_lock(send_mutex);
+	// Tell main thread that mutex is locked
+	pthread_barrier_wait(startup_barr);
 	while (send_thread_running) {
 		pthread_cond_wait(send_data_ready, send_mutex);
 		while (send_buffer_used > 0) {
@@ -240,15 +241,18 @@ int main(int argc, char **argv)
 	// Create our mutexes
 	send_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
 	send_data_ready = (pthread_cond_t*)malloc(sizeof(pthread_cond_t));
+	startup_barr = (pthread_barrier_t*)malloc(sizeof(pthread_barrier_t));
 	pthread_mutex_init(send_mutex, 0);
 	pthread_cond_init(send_data_ready, 0);
+	// Create a barrier for main and sending threads
+	pthread_barrier_init(startup_barr, 0, 2);
 
 	// Create our sending thread
 	send_thread = (pthread_t*)malloc(sizeof(pthread_t));
 	send_thread_running = 1;
 	pthread_create(send_thread, 0, &send_loop, 0);
-	//TODO: Find a better way of making send_thread reach wait() before the first signal()
-	pthread_mutex_lock(send_mutex);
+	// Wait for sending thread to get mutex
+	pthread_barrier_wait(startup_barr);
 
 	// Select param
 	fd_set socket_set;
@@ -302,6 +306,8 @@ int main(int argc, char **argv)
 	free(send_mutex);
 	pthread_cond_destroy(send_data_ready);
 	free(send_data_ready);
+	pthread_barrier_destroy(startup_barr);
+	free(startup_barr);
 
 	close(socket_fd);
 	curl_global_cleanup();
