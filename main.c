@@ -310,7 +310,6 @@ int main(int argc, char **argv)
 	free(startup_barr);
 
 	close(socket_fd);
-	curl_global_cleanup();
 	free(irc);
 	free(send_buffer);
 	free_patterns(patterns);
