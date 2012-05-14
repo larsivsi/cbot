@@ -2,9 +2,9 @@
 
 #include "main.h"
 
+#include <alloca.h>
 #include <stdio.h>
 #include <string.h>
-#include <alloca.h>
 
 void eightball(struct recv_data *in, char *arguments)
 {

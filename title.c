@@ -2,10 +2,11 @@
 
 #include "main.h"
 
-#include <string.h>
 #include <curl/curl.h>
+#include <string.h>
 
 #define HTTP_BUFFER 10240 //10kb http buffer
+
 char http_buffer[HTTP_BUFFER];
 size_t http_buffer_pos;
 

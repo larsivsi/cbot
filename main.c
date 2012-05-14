@@ -1,20 +1,20 @@
 #include "main.h"
 
-#include "title.h"
 #include "config.h"
-#include "log.h"
 #include "eightball.h"
+#include "log.h"
+#include "title.h"
 
+#include <curl/curl.h>
 #include <errno.h>
+#include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
 #include <sys/select.h>
-#include <curl/curl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 /// Global variables, used by multiple threads
 int socket_fd;

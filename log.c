@@ -1,8 +1,10 @@
-#include "main.h"
-#include "config.h"
+#include "log.h"
 
-#include <string.h>
+#include "config.h"
+#include "main.h"
+
 #include <libpq-fe.h>
+#include <string.h>
 
 PGconn *connection = 0;
 

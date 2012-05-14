@@ -4,8 +4,8 @@
 // For getaddrinfo and the likes
 #define _POSIX_C_SOURCE 200112L
 
-#include <pthread.h>
 #include <pcre.h>
+#include <pthread.h>
 
 // Buffers
 #define BUFFER 512

@@ -1,9 +1,10 @@
 #include "timer.h"
+
 #include "main.h"
 
 #include <signal.h>
-#include <time.h>
 #include <stdio.h>
+#include <time.h>
 
 
 typedef struct {
