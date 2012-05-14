@@ -17,6 +17,7 @@ extern struct config *config;
 
 char *read_line(FILE *file);
 int load_config(void);
+void set_config_param(char *parameter, char *value);
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
 #endif//CONFIG_H

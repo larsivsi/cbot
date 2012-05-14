@@ -2,6 +2,7 @@
 
 #include "main.h"
 
+#include <pcre.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -10,8 +11,8 @@ struct config *config;
 char *read_line(FILE *file)
 {
 	char line_buf[BUFFER];
-	fgets(line_buf, BUFFER, file);
-
+	if (fgets(line_buf, BUFFER, file) == 0)
+		return 0;
 	int length = strlen(line_buf);
 	// Remove trailing newline
 	line_buf[length-1] = '\0';
@@ -30,14 +31,69 @@ int load_config(void)
 		exit(1);
 	}
 
-	config->nick = read_line(config_file); 
-	config->user = read_line(config_file); 
-	config->host = read_line(config_file); 
-	config->port = read_line(config_file); 
-	config->channel = read_line(config_file); 
-	config->db_connection_string = read_line(config_file);
+	const char *pcre_err;
+	int pcre_err_off;
+	pcre *pattern;
+	if ((pattern = pcre_compile("(\\w+)\\s*=\\s*(.+)", PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL) {
+		printf("Could not compile config pattern\n");
+		exit(1);
+	}
+
+	char *line;
+	char *parameter = (char*)malloc(512);
+	char *value = (char*)malloc(1024);
+	while((line = read_line(config_file)) != 0) {
+		// TODO: check 30
+		int offsets[30];
+		int offsetcount = pcre_exec(pattern, 0, line, strlen(line), 0, 0, offsets, 30);
+		if (offsetcount == 3) {
+			pcre_copy_substring(line, offsets, offsetcount, 1, parameter, 1024);
+			pcre_copy_substring(line, offsets, offsetcount, 2, value, 1024);
+			set_config_param(parameter, value);
+			printf("para: %s, val: %s\n", parameter, value);
+		}
+		else {
+			printf("Illegal line in config file: \'%s\'!\n", line);
+			exit(1);
+		}
+		free(line);
+	}
+
+	pcre_free(pattern);
+	free(parameter);
+	free(value);
 
 	fclose(config_file);
 	return 1;
+}
+
+void set_config_param(char *parameter, char *value) {
+	if (!strcmp(parameter, "nick")) {
+		config->nick = (char*)malloc(strlen(value));
+		strcpy(config->nick, value);
+	}
+	else if (!strcmp(parameter, "user")) {
+		config->user = (char*)malloc(strlen(value));
+		strcpy(config->user, value);
+	}
+	else if (!strcmp(parameter, "host")) {
+		config->host = (char*)malloc(strlen(value));
+		strcpy(config->host, value);
+	}
+	else if (!strcmp(parameter, "port")) {
+		config->port = (char*)malloc(strlen(value));
+		strcpy(config->port, value);
+	}
+	else if (!strcmp(parameter, "channel")) {
+		config->channel = (char*)malloc(strlen(value));
+		strcpy(config->channel, value);
+	}
+	else if (!strcmp(parameter, "dbconnect")) {
+		config->db_connection_string = (char*)malloc(strlen(value));
+		strcpy(config->db_connection_string, value);
+	}
+	else {
+		printf("WARNING: Unknown config parameter \'%s\' with value \'%s\'!\n", parameter, value);
+	}
 }
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
