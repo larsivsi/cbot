@@ -40,8 +40,8 @@ int load_config(void)
 	}
 
 	char *line;
-	char *parameter = (char*)malloc(512);
-	char *value = (char*)malloc(1024);
+	char *parameter = malloc(512);
+	char *value = malloc(1024);
 	while((line = read_line(config_file)) != 0) {
 		// TODO: check 30
 		int offsets[30];
@@ -69,27 +69,27 @@ int load_config(void)
 
 void set_config_param(char *parameter, char *value) {
 	if (!strcmp(parameter, "nick")) {
-		config->nick = (char*)malloc(strlen(value));
+		config->nick = malloc(strlen(value));
 		strcpy(config->nick, value);
 	}
 	else if (!strcmp(parameter, "user")) {
-		config->user = (char*)malloc(strlen(value));
+		config->user = malloc(strlen(value));
 		strcpy(config->user, value);
 	}
 	else if (!strcmp(parameter, "host")) {
-		config->host = (char*)malloc(strlen(value));
+		config->host = malloc(strlen(value));
 		strcpy(config->host, value);
 	}
 	else if (!strcmp(parameter, "port")) {
-		config->port = (char*)malloc(strlen(value));
+		config->port = malloc(strlen(value));
 		strcpy(config->port, value);
 	}
 	else if (!strcmp(parameter, "channel")) {
-		config->channel = (char*)malloc(strlen(value));
+		config->channel = malloc(strlen(value));
 		strcpy(config->channel, value);
 	}
 	else if (!strcmp(parameter, "dbconnect")) {
-		config->db_connection_string = (char*)malloc(strlen(value));
+		config->db_connection_string = malloc(strlen(value));
 		strcpy(config->db_connection_string, value);
 	}
 	else {
