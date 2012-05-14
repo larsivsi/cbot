@@ -40,17 +40,16 @@ int load_config(void)
 	}
 
 	char *line;
-	char *parameter = malloc(512);
-	char *value = malloc(1024);
+	char *parameter = malloc(BUFFER);
+	char *value = malloc(BUFFER);
 	while((line = read_line(config_file)) != 0) {
 		// TODO: check 30
 		int offsets[30];
 		int offsetcount = pcre_exec(pattern, 0, line, strlen(line), 0, 0, offsets, 30);
 		if (offsetcount == 3) {
-			pcre_copy_substring(line, offsets, offsetcount, 1, parameter, 1024);
-			pcre_copy_substring(line, offsets, offsetcount, 2, value, 1024);
+			pcre_copy_substring(line, offsets, offsetcount, 1, parameter, BUFFER);
+			pcre_copy_substring(line, offsets, offsetcount, 2, value, BUFFER);
 			set_config_param(parameter, value);
-			printf("para: %s, val: %s\n", parameter, value);
 		}
 		else {
 			printf("Illegal line in config file: \'%s\'!\n", line);
