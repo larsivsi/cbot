@@ -60,7 +60,7 @@ int load_config(void)
 
 	pcre_free(pattern);
 	free(parameter);
-	free(value);
+ 	free(value);
 
 	fclose(config_file);
 	return 1;
@@ -68,27 +68,27 @@ int load_config(void)
 
 void set_config_param(char *parameter, char *value) {
 	if (!strcmp(parameter, "nick")) {
-		config->nick = malloc(strlen(value));
+		config->nick = malloc(strlen(value) + 1);
 		strcpy(config->nick, value);
 	}
 	else if (!strcmp(parameter, "user")) {
-		config->user = malloc(strlen(value));
+		config->user = malloc(strlen(value) + 1);
 		strcpy(config->user, value);
 	}
 	else if (!strcmp(parameter, "host")) {
-		config->host = malloc(strlen(value));
+		config->host = malloc(strlen(value) + 1);
 		strcpy(config->host, value);
 	}
 	else if (!strcmp(parameter, "port")) {
-		config->port = malloc(strlen(value));
+		config->port = malloc(strlen(value) + 1);
 		strcpy(config->port, value);
 	}
 	else if (!strcmp(parameter, "channel")) {
-		config->channel = malloc(strlen(value));
+		config->channel = malloc(strlen(value) + 1);
 		strcpy(config->channel, value);
 	}
 	else if (!strcmp(parameter, "dbconnect")) {
-		config->db_connection_string = malloc(strlen(value));
+		config->db_connection_string = malloc(strlen(value) + 1);
 		strcpy(config->db_connection_string, value);
 	}
 	else {
