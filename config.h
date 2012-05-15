@@ -15,7 +15,7 @@ struct config {
 };
 extern struct config *config;
 
-char *read_line(FILE *file);
+int read_line(FILE *file, char *line);
 int load_config(void);
 void set_config_param(char *parameter, char *value);
 

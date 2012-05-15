@@ -8,17 +8,16 @@
 
 struct config *config;
 
-char *read_line(FILE *file)
+int read_line(FILE *file, char *line)
 {
 	char line_buf[BUFFER];
 	if (fgets(line_buf, BUFFER, file) == 0)
-		return 0;
+		return 1;
 	int length = strlen(line_buf);
 	// Remove trailing newline
 	line_buf[length-1] = '\0';
-	char *line = malloc(length);
 	strncpy(line, line_buf, length);
-	return line;
+	return 0;
 }
 
 int load_config(void)
@@ -39,10 +38,10 @@ int load_config(void)
 		exit(1);
 	}
 
-	char *line;
+	char *line = malloc(BUFFER);
 	char *parameter = malloc(BUFFER);
 	char *value = malloc(BUFFER);
-	while((line = read_line(config_file)) != 0) {
+	while(read_line(config_file, line) == 0) {
 		// TODO: check 30
 		int offsets[30];
 		int offsetcount = pcre_exec(pattern, 0, line, strlen(line), 0, 0, offsets, 30);
@@ -55,10 +54,10 @@ int load_config(void)
 			printf("Illegal line in config file: \'%s\'!\n", line);
 			exit(1);
 		}
-		free(line);
 	}
 
 	pcre_free(pattern);
+	free(line);
 	free(parameter);
  	free(value);
 
