@@ -268,7 +268,7 @@ int main(int argc, char **argv)
 		config->user, config->nick, config->nick, config->channel);
 	send_str(buffer);
 
-	struct recv_data *irc = malloc(sizeof(*irc));
+	struct recv_data *irc = malloc(sizeof(struct recv_data));
 	patterns = malloc(sizeof(*patterns));
 	compile_patterns(patterns);
 
