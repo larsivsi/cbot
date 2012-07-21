@@ -27,6 +27,17 @@ size_t http_write_callback(void *contents, size_t element_size, size_t num_eleme
 	return element_size * num_elements;
 }
 
+void clean_spaces(char *str)
+{
+    int i,j;
+    for (i=j=0; i<strlen(str) - 1; i++) {
+        str[j] = str[i];
+        if (str[i] != ' ' || str[i+1] != ' ')
+            j++;
+    }
+    str[j] = 0; // null terminate
+}
+
 void strip_newlines(char *str)
 {
 	for (int i=0; i<strlen(str); i++) if (str[i] == '\n') str[i] = ' ';
@@ -51,6 +62,7 @@ void get_title_from_url(struct recv_data *in, const char *url)
 	if (titlecount > 0) {
 		pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER);
 		strip_newlines(title);
+        clean_spaces(title);
 		printf("got title: %s\n", title);
 		char *buf = malloc(strlen(in->channel) + strlen(title) + 15);
 		sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
