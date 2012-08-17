@@ -17,19 +17,19 @@ typedef struct
 static void *timer_thread(void *argument)
 {
     timer_thread_t *object = (timer_thread_t*)argument;
-    printf("sleeping for %d seconds\n", object->seconds);
     sleep(object->seconds);
-    char buf[strlen(object->channel) + strlen(object->nick) + 15];
-    sprintf(buf, "PRIVMSG %s :%s DING!\n", object->channel, object->nick);
+    char buf[strlen(object->channel) + strlen(object->nick) + 18];
+    sprintf(buf, "PRIVMSG %s :%s: DING!\n", object->channel, object->nick);
     send_str(buf);
     free(object->thread);
     free(object);
+
     return 0;
 }
 
 void set_timer(const char *nick, const char *channel, unsigned int seconds)
 {
-    printf("setting timer\n");
+    // Create a thread that will sleep for the specified amount of time before suiciding
     pthread_t *thread = (pthread_t*)malloc(sizeof(pthread_t));
     timer_thread_t *object = (timer_thread_t*)(malloc(sizeof(timer_thread_t)));
     object->thread = thread;
@@ -37,6 +37,7 @@ void set_timer(const char *nick, const char *channel, unsigned int seconds)
     object->seconds = seconds;
     object->channel = channel;
     pthread_create(thread, 0, &timer_thread, object);
+    pthread_detach(*thread);
 }
 
 
