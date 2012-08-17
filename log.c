@@ -2,6 +2,7 @@
 
 #include "config.h"
 #include "common.h"
+#include "irc.h"
 
 #include <libpq-fe.h>
 #include <string.h>

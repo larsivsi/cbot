@@ -1,6 +1,7 @@
 #include "title.h"
 
 #include "common.h"
+#include "irc.h"
 
 #include <curl/curl.h>
 #include <string.h>

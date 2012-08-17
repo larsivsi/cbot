@@ -5,6 +5,7 @@
 #include "log.h"
 #include "title.h"
 #include "timer.h"
+#include "irc.h"
 
 #include <curl/curl.h>
 #include <errno.h>
@@ -16,6 +17,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 
 /// Global variables, used by multiple threads
 int socket_fd;

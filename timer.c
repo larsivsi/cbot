@@ -5,6 +5,7 @@
 
 #include "timer.h"
 #include "common.h"
+#include "irc.h"
 
 typedef struct
 {

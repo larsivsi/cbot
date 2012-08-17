@@ -1,6 +1,7 @@
 #include "eightball.h"
 
 #include "common.h"
+#include "irc.h"
 
 #include <alloca.h>
 #include <stdio.h>
