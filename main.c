@@ -118,8 +118,8 @@ int main(int argc, char **argv)
 		printf("Usage: %s [configfile]\n", argv[0]);
 		exit(0);
 	}
-	printf(" - Connecting to %s:%s with nick %s, joining channel #%s...\n",
-			config->host, config->port, config->nick, config->channel);
+	printf(" - Connecting to %s:%s with nick %s, joining channel %s...\n",
+			config->host, config->port, config->nick, config->channels);
 
 	// Set up cURL
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -157,8 +157,8 @@ int main(int argc, char **argv)
 	srand(time(NULL));
 
 	// Join
-	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN #%s\n",
-		config->user, config->nick, config->nick, config->channel);
+	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN %s\n",
+		config->user, config->nick, config->nick, config->channels);
 	send_str(buffer);
 
 	struct recv_data *irc = malloc(sizeof(struct recv_data));

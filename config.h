@@ -8,7 +8,7 @@ struct config {
 	char *user;
 	char *host;
 	char *port;
-	char *channel;
+	char *channels;
 	char *db_connection_string;
 };
 extern struct config *config;

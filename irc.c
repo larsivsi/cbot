@@ -55,7 +55,7 @@ int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		if (strcmp(in->message, config->nick) == 0) {
 			printf("Got kicked, rejoining\n");
 			char rejoin[40];
-			sprintf(rejoin, "JOIN #%s\n", in->channel);
+			sprintf(rejoin, "JOIN %s\n", in->channel);
 			send_str(rejoin);
 		}
 		return 0;

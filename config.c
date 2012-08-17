@@ -14,7 +14,7 @@ void free_config()
 	free(config->user);
 	free(config->host);
 	free(config->port);
-	free(config->channel);
+	free(config->channels);
 	free(config->db_connection_string);
 	free(config);
 }
@@ -36,9 +36,9 @@ void set_config_param(char *parameter, char *value) {
 		config->port = malloc(strlen(value) + 1);
 		strcpy(config->port, value);
 	}
-	else if (!strcmp(parameter, "channel")) {
-		config->channel = malloc(strlen(value) + 1);
-		strcpy(config->channel, value);
+	else if (!strcmp(parameter, "channels")) {
+		config->channels = malloc(strlen(value) + 1);
+		strcpy(config->channels, value);
 	}
 	else if (!strcmp(parameter, "dbconnect")) {
 		config->db_connection_string = malloc(strlen(value) + 1);
