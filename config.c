@@ -8,6 +8,47 @@
 
 struct config *config;
 
+void free_config()
+{
+	free(config->nick);
+	free(config->user);
+	free(config->host);
+	free(config->port);
+	free(config->channel);
+	free(config->db_connection_string);
+	free(config);
+}
+
+void set_config_param(char *parameter, char *value) {
+	if (!strcmp(parameter, "nick")) {
+		config->nick = malloc(strlen(value) + 1);
+		strcpy(config->nick, value);
+	}
+	else if (!strcmp(parameter, "user")) {
+		config->user = malloc(strlen(value) + 1);
+		strcpy(config->user, value);
+	}
+	else if (!strcmp(parameter, "host")) {
+		config->host = malloc(strlen(value) + 1);
+		strcpy(config->host, value);
+	}
+	else if (!strcmp(parameter, "port")) {
+		config->port = malloc(strlen(value) + 1);
+		strcpy(config->port, value);
+	}
+	else if (!strcmp(parameter, "channel")) {
+		config->channel = malloc(strlen(value) + 1);
+		strcpy(config->channel, value);
+	}
+	else if (!strcmp(parameter, "dbconnect")) {
+		config->db_connection_string = malloc(strlen(value) + 1);
+		strcpy(config->db_connection_string, value);
+	}
+	else {
+		printf("WARNING: Unknown config parameter \'%s\' with value \'%s\'!\n", parameter, value);
+	}
+}
+
 int read_line(FILE *file, char *line)
 {
 	char line_buf[BUFFER_SIZE];
@@ -65,33 +106,4 @@ int load_config(const char *filename)
 	return 1;
 }
 
-void set_config_param(char *parameter, char *value) {
-	if (!strcmp(parameter, "nick")) {
-		config->nick = malloc(strlen(value) + 1);
-		strcpy(config->nick, value);
-	}
-	else if (!strcmp(parameter, "user")) {
-		config->user = malloc(strlen(value) + 1);
-		strcpy(config->user, value);
-	}
-	else if (!strcmp(parameter, "host")) {
-		config->host = malloc(strlen(value) + 1);
-		strcpy(config->host, value);
-	}
-	else if (!strcmp(parameter, "port")) {
-		config->port = malloc(strlen(value) + 1);
-		strcpy(config->port, value);
-	}
-	else if (!strcmp(parameter, "channel")) {
-		config->channel = malloc(strlen(value) + 1);
-		strcpy(config->channel, value);
-	}
-	else if (!strcmp(parameter, "dbconnect")) {
-		config->db_connection_string = malloc(strlen(value) + 1);
-		strcpy(config->db_connection_string, value);
-	}
-	else {
-		printf("WARNING: Unknown config parameter \'%s\' with value \'%s\'!\n", parameter, value);
-	}
-}
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/

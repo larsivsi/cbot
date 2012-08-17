@@ -192,16 +192,10 @@ int main(int argc, char **argv)
 	free(irc);
 	free_patterns(patterns);
 	free(patterns);
-	free(config->nick);
-	free(config->user);
-	free(config->host);
-	free(config->port);
-	free(config->channel);
-	free(config->db_connection_string);
-	free(config);
 
 	log_terminate();
 	irc_terminate();
+	free_config();
 
 	curl_global_cleanup();
 
