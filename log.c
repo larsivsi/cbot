@@ -27,19 +27,11 @@ void log_init()
 
 	PGresult *result;
 
+	// User queries
 	result = PQprepare(connection, "create_nick", "INSERT INTO nicks(nick, name, created_at, updated_at, words) VALUES ($1, '', NOW(), NOW(), 0) RETURNING id", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
 		PQclear(result);
 		printf(" ! Unable to create prepared function (create_nick)!\n");
-		log_abort();
-		return;
-	}
-	PQclear(result);
-
-	result = PQprepare(connection, "log_message", "INSERT INTO logs(nick_id, text, created_at) VALUES ($1, $2, NOW())", 0, 0);
-	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-		PQclear(result);
-		printf(" ! Unable to create prepared function (log_message)!\n");
 		log_abort();
 		return;
 	}
@@ -58,6 +50,53 @@ void log_init()
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
 		PQclear(result);
 		printf(" ! Unable to create prepared function (get_nick_id)!\n");
+		log_abort();
+		return;
+	}
+	PQclear(result);
+
+	// URL queries
+	result = PQprepare(connection, "create_url", "INSERT INTO links(nick_id, link, created_at, times_posted) VALUES ((SELECT nick_id FROM nick WHERE nick = $1), $2, NOW(), 1)", 0, 0);
+	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
+		printf(" ! Unable to create prepared function (create_url)!\n");
+		log_abort();
+		return;
+	}
+	PQclear(result);
+
+	result = PQprepare(connection, "update_url", "UPDATE links SET times_posted = times_posted+1 WHERE link = $1", 0, 0);
+	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
+		printf(" ! Unable to create prepared function (update_url)!\n");
+		log_abort();
+		return;
+	}
+	PQclear(result);
+
+	result = PQprepare(connection, "get_old_url", "SELECT nick, link, links.created_at, times_posted FROM links, nicks WHERE nick_id = nicks.id AND link=$1", 0, 0);
+	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
+		printf(" ! Unable to create prepared function (get_old_url)!\n");
+		log_abort();
+		return;
+	}
+	PQclear(result);
+
+	// Other queries
+	result = PQprepare(connection, "log_message", "INSERT INTO logs((SELECT nick_id from nicks WHERE nick = $1), text, created_at) VALUES ($2, $3, NOW())", 0, 0);
+	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
+		printf(" ! Unable to create prepared function (log_message)!\n");
+		log_abort();
+		return;
+	}
+	PQclear(result);
+
+	result = PQprepare(connection, "log_eightball", "INSERT INTO eightball_logs(nick_id,query,answer,created_at) VALUES ($1, $2, $3, NOW())", 0, 0);
+	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
+		printf(" ! Unable to create prepared function (log_message)!\n");
 		log_abort();
 		return;
 	}
@@ -136,4 +175,71 @@ void log_message(struct recv_data *in)
 	free(numwords_buf);
 
 }
+
+void log_url(struct recv_data *in, const char *url)
+{
+	const char *parameters[2];
+	PGresult *link_result;
+
+	parameters[0] = url;
+	// SELECT nick, link, links.created_at, times_posted FROM links, nicks WHERE nick_id = nicks.id AND link=$1
+	link_result = PQexecPrepared(connection, "get_old_url", 1, parameters, 0, 0, 0);
+	if (PQresultStatus(link_result) != PGRES_TUPLES_OK) {
+		PQclear(link_result);
+		printf(" ! Unable to get old URLs from database!\n");
+		return;
+	}
+
+	if (PQntuples(link_result) > 0) {
+		char *times_posted = PQgetvalue(link_result, 0, 3);
+		char *nick = PQgetvalue(link_result, 0, 0);
+		char *date = PQgetvalue(link_result, 0, 2);
+		char buf[90 + strlen(in->channel) + strlen(in->nick) + strlen(times_posted) + strlen(nick) + strlen(date)];
+		sprintf(buf, "PRIVMSG %s :%s: OLD! Your link has been posted %s times and was first posted by %s at %s",
+				in->channel, 
+				in->nick, 
+				times_posted, 
+				nick, 
+				date);
+		send_str(buf);
+		PQclear(link_result);
+
+		//UPDATE links SET times_posted = times_posted+1 WHERE link = $1
+		link_result = PQexecPrepared(connection, "update_url", 1, parameters, 0, 0, 0);
+		if (PQresultStatus(link_result) != PGRES_COMMAND_OK) {
+			printf(" ! Unable to update old URLs in database!\n");
+		}
+
+		PQclear(link_result);
+		return;
+	}
+	PQclear(link_result);
+
+	// New URL we need to insert
+
+	parameters[0] = in->nick;
+	parameters[1] = url;
+	link_result = PQexecPrepared(connection, "create_url", 2, parameters, 0, 0, 0);
+	if (PQresultStatus(link_result) != PGRES_COMMAND_OK) {
+		printf(" ! Unable to insert new URL in database!\n");
+	}
+	PQclear(link_result);
+}
+
+void log_eightball(const char *nick, const char *query, const char *answer)
+{
+	const char *parameters[3];
+	parameters[0] = nick;
+	parameters[1] = query;
+	parameters[2] = answer;
+
+	// INSERT INTO eightball_logs(nick_id,query,answer,created_at) VALUES ($1, $2, $3, NOW())
+	PGresult *logresult = PQexecPrepared(connection, "log_eightball", 3, parameters, 0, 0, 0);
+	if (PQresultStatus(logresult) != PGRES_COMMAND_OK) {
+		printf(" ! Unable to log eightball to database!\n");
+	}
+
+	PQclear(logresult);
+}
+
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/

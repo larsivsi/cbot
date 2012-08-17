@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "irc.h"
+#include "log.h"
 
 #include <alloca.h>
 #include <stdio.h>
@@ -24,4 +25,6 @@ void eightball(struct recv_data *in, char *arguments)
 			in->channel, in->nick, args[win]);
 	send_str(buf);
 	free(buf);
+
+    log_eightball(in->nick, arguments, args[win]);
 }

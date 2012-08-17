@@ -85,6 +85,7 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 		char url[BUFFER_SIZE];
 		pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER_SIZE);
 		get_title_from_url(in, url);
+		log_url(in, url);
 		offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), offsets[1], 0, offsets, 30);
 	}
 
