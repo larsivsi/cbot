@@ -6,6 +6,7 @@
 
 #include <libpq-fe.h>
 #include <string.h>
+#include <stdlib.h>
 
 PGconn *connection = 0;
 

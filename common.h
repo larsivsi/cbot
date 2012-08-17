@@ -1,12 +1,13 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <pcre.h>
 
 // Buffers
 #define BUFFER 512
 
 extern int socket_fd;
+
+typedef struct real_pcre pcre;
 
 struct patterns {
 	pcre *privmsg;

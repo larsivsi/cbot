@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 #include "timer.h"
 #include "common.h"

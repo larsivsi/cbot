@@ -5,6 +5,7 @@
 
 #include <curl/curl.h>
 #include <string.h>
+#include <pcre.h>
 
 #define HTTP_BUFFER 10240 //10kb http buffer
 

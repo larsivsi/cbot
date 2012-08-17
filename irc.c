@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <string.h>
 #include <netdb.h>
+#include <stdlib.h>
+#include <pcre.h>
 
 char *send_buffer = 0;
 size_t send_buffer_size = 0;

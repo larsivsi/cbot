@@ -5,10 +5,10 @@
 #include "log.h"
 #include "title.h"
 #include "timer.h"
-
 #include "irc.h"
 
 #include <curl/curl.h>
+#include <pcre.h>
 #include <errno.h>
 #include <netdb.h>
 #include <stdio.h>
