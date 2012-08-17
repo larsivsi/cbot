@@ -20,13 +20,13 @@ int read_line(FILE *file, char *line)
 	return 0;
 }
 
-int load_config(void)
+int load_config(const char *filename)
 {
 	FILE *config_file;
 
-	config_file = fopen(CONFIG_FILE, "r");
+	config_file = fopen(filename, "r");
 	if (config_file == 0) {
-		printf("Unable to open config file: %s\n", CONFIG_FILE);
+		printf("Unable to open config file: %s\n", filename);
 		exit(1);
 	}
 

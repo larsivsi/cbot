@@ -100,7 +100,7 @@ int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, BUFFER);
 		// In case of privmsgs
 		if (strcmp(in->channel, config->nick) == 0)
-			strcpy(in->nick, in->channel);
+			strcpy(in->channel, in->nick);
 		return 1;
 	}
 	offsetcount = pcre_exec(patterns->kick, 0, msg, strlen(msg), 0, 0, offsets, 30);
@@ -178,7 +178,7 @@ void send_str(char *msg)
 	pthread_mutex_unlock(send_mutex);
 
 	// Print out what we have done
-	printf("--> %s", msg);
+	printf("%s", msg);
 }
 
 void *send_loop(void *arg)
@@ -203,14 +203,15 @@ int main(int argc, char **argv)
 {
 	config = malloc(sizeof(*config));
 	if (argc == 1) {
-		load_config();
-	}
-	else {
-		printf("Usage: %s\n", argv[0]);
+		load_config("cbot.conf");
+	} else if (argc == 2) {
+		load_config(argv[1]);
+	} else {
+		printf("Usage: %s [configfile]\n", argv[0]);
 		exit(0);
 	}
-	printf("nick: %s, user: %s, host: %s, port: %s, channel: %s\n",
-		config->nick, config->user, config->host, config->port, config->channel);
+	printf(" - Connecting to %s:%s with nick %s, joining channel #%s...\n",
+			config->host, config->port, config->nick, config->channel);
 
 	// Set up cURL
 	curl_global_init(CURL_GLOBAL_ALL);

@@ -3,8 +3,6 @@
 
 #include <stdio.h>
 
-#define CONFIG_FILE "cbot.conf"
-
 struct config {
 	char *nick;
 	char *user;
@@ -16,7 +14,7 @@ struct config {
 extern struct config *config;
 
 int read_line(FILE *file, char *line);
-int load_config(void);
+int load_config(const char *file);
 void set_config_param(char *parameter, char *value);
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
