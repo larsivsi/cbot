@@ -1,9 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-
-// Buffers
-#define BUFFER 512
+// generic buffer size
+#define BUFFER_SIZE 512
 
 extern int socket_fd;
 

@@ -10,8 +10,8 @@ struct config *config;
 
 int read_line(FILE *file, char *line)
 {
-	char line_buf[BUFFER];
-	if (fgets(line_buf, BUFFER, file) == 0)
+	char line_buf[BUFFER_SIZE];
+	if (fgets(line_buf, BUFFER_SIZE, file) == 0)
 		return 1;
 	int length = strlen(line_buf);
 	// Remove trailing newline
@@ -38,16 +38,16 @@ int load_config(const char *filename)
 		exit(1);
 	}
 
-	char *line = malloc(BUFFER);
-	char *parameter = malloc(BUFFER);
-	char *value = malloc(BUFFER);
+	char *line = malloc(BUFFER_SIZE);
+	char *parameter = malloc(BUFFER_SIZE);
+	char *value = malloc(BUFFER_SIZE);
 	while(read_line(config_file, line) == 0) {
 		// TODO: check 30
 		int offsets[30];
 		int offsetcount = pcre_exec(pattern, 0, line, strlen(line), 0, 0, offsets, 30);
 		if (offsetcount == 3) {
-			pcre_copy_substring(line, offsets, offsetcount, 1, parameter, BUFFER);
-			pcre_copy_substring(line, offsets, offsetcount, 2, value, BUFFER);
+			pcre_copy_substring(line, offsets, offsetcount, 1, parameter, BUFFER_SIZE);
+			pcre_copy_substring(line, offsets, offsetcount, 2, value, BUFFER_SIZE);
 			set_config_param(parameter, value);
 		}
 		else {

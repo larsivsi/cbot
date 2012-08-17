@@ -11,7 +11,7 @@
 void eightball(struct recv_data *in, char *arguments)
 {
 	int count = 0;
-	char **args = (char**)alloca(BUFFER);
+	char **args = (char**)alloca(BUFFER_SIZE);
 	char *pch = strtok(arguments, ":");
 	while (pch != NULL) {
 		args[count] = pch;
@@ -19,7 +19,7 @@ void eightball(struct recv_data *in, char *arguments)
 		pch = strtok(NULL, ":");
 	}
 	int win = rand() % count;
-	char *buf = (char*)malloc(BUFFER);
+	char *buf = (char*)malloc(BUFFER_SIZE);
 	sprintf(buf, "PRIVMSG %s :%s: the answer to your question is: %s\n",
 			in->channel, in->nick, args[win]);
 	send_str(buf);

@@ -82,8 +82,8 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 	// Check URLs
 	int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	while (offsets[1] < strlen(msg) && offsetcount > 0) {
-		char url[BUFFER];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER);
+		char url[BUFFER_SIZE];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER_SIZE);
 		get_title_from_url(in, url);
 		offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), offsets[1], 0, offsets, 30);
 	}
@@ -91,8 +91,8 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 	// 8ball
 	offsetcount = pcre_exec(patterns->eightball, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount > 0) {
-		char arguments[BUFFER];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, arguments, BUFFER);
+		char arguments[BUFFER_SIZE];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, arguments, BUFFER_SIZE);
 		eightball(in, arguments);
 	}
 
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 	log_init();
 
 	int err, recv_size;
-	char buffer[BUFFER];
+	char buffer[BUFFER_SIZE];
 	struct addrinfo hints;
 	struct addrinfo *srv;
 	memset(&hints, 0, sizeof(hints));
@@ -166,8 +166,8 @@ int main(int argc, char **argv)
 
 	while (select(socket_fd+1, &socket_set, 0, 0, 0) != -1) {
 		if (FD_ISSET(STDIN_FILENO, &socket_set)) {
-			char input[BUFFER];
-			fgets(input, BUFFER, stdin);
+			char input[BUFFER_SIZE];
+			fgets(input, BUFFER_SIZE, stdin);
 			if (strcmp(input, "quit\n") == 0) {
 				printf(">> Bye!\n");
 				break;
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 			FD_SET(socket_fd, &socket_set);
 		}
 		else {
-			recv_size = recv(socket_fd, buffer, BUFFER-1, 0);
+			recv_size = recv(socket_fd, buffer, BUFFER_SIZE-1, 0);
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';
 			printf("%s", buffer);	

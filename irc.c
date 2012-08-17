@@ -36,7 +36,7 @@ int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 2, in->user, 32);
 		pcre_copy_substring(msg, offsets, offsetcount, 3, in->server, 64);
 		pcre_copy_substring(msg, offsets, offsetcount, 4, in->channel, 32);
-		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, BUFFER);
+		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, BUFFER_SIZE);
 		// In case of privmsgs
 		if (strcmp(in->channel, config->nick) == 0) {
 			printf("%s : %s \n", in->channel, in->nick);
@@ -71,7 +71,7 @@ void send_str(char *msg)
 	int length = strlen(msg);
 	// Check if we have enough space
 	if (length > send_buffer_size - send_buffer_used) {
-		int new_buffer_size = send_buffer_size + BUFFER;
+		int new_buffer_size = send_buffer_size + BUFFER_SIZE;
 		if (!realloc(send_buffer, new_buffer_size)) {
 			die("Unable to allocate more memory for send buffer", strerror(errno));
 		}
@@ -110,8 +110,8 @@ void *send_loop(void *arg)
 void irc_init()
 {
 	// Allocate the send buffer
-	send_buffer = malloc(BUFFER);
-	send_buffer_size = BUFFER;
+	send_buffer = malloc(BUFFER_SIZE);
+	send_buffer_size = BUFFER_SIZE;
 
 	// Create our mutexes
 	send_mutex = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));

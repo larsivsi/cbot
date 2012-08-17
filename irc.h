@@ -8,7 +8,7 @@ struct recv_data {
 	char user[32];
 	char server[64];
 	char channel[32];
-	char message[BUFFER];
+	char message[BUFFER_SIZE];
 };
 
 void irc_init();
