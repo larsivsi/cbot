@@ -1,6 +1,6 @@
 #include "eightball.h"
 
-#include "main.h"
+#include "common.h"
 
 #include <alloca.h>
 #include <stdio.h>

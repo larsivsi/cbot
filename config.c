@@ -1,6 +1,6 @@
 #include "config.h"
 
-#include "main.h"
+#include "common.h"
 
 #include <pcre.h>
 #include <stdlib.h>

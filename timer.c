@@ -4,7 +4,7 @@
 #include <pthread.h>
 
 #include "timer.h"
-#include "main.h"
+#include "common.h"
 
 typedef struct
 {

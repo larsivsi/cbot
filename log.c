@@ -1,7 +1,7 @@
 #include "log.h"
 
 #include "config.h"
-#include "main.h"
+#include "common.h"
 
 #include <libpq-fe.h>
 #include <string.h>
