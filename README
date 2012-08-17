@@ -1,5 +1,15 @@
-Required packages:
-libpcre3
-libpcre3-dev
-libcurl4-openssl-dev
-libpq-dev
+cbot
+~~~~
+
+  A (not so) minimalistic IRC bot written from scratch in ISO99 C.
+
+Why?
+  It started as a bad joke, then became a possible replacement for the IRC-bot
+  "gangbot", written in ruby: https://github.com/larsivsi/gangbot
+
+Authors:
+ * Lars-Ivar Simonsen (larsivsi)
+ * Martin Sandsmark (sandsmark)
+
+Required packages (on recent Debian):
+  libpcre3-dev libcurl4-openssl-dev libpq-dev
