@@ -9,8 +9,8 @@
 typedef struct
 {
     pthread_t *thread;
-    const char *nick;
-    const char *channel;
+    char nick[32];
+    char channel[32];
     unsigned int seconds;
 } timer_thread_t;
 
@@ -30,19 +30,18 @@ static void *timer_thread(void *argument)
 void set_timer(const char *nick, const char *channel, unsigned int seconds)
 {
     // Tell the user how long he has to wait
-    char buf[strlen(channel) + strlen(nick) + 38/*constant text*/ + 11 /*maximum length of the unsigned int*/];
-    sprintf(buf, "PRIVMSG %s :%s: Notifying you in %d seconds\n", channel, nick, seconds);
+    char buf[strlen(channel) + 37/*constant text*/ + 11 /*maximum length of the unsigned int*/];
+    sprintf(buf, "PRIVMSG %s : Notifying you in %d seconds\n", channel, nick, seconds);
     send_str(buf);
 
     // Create a thread that will sleep for the specified amount of time before suiciding
     pthread_t *thread = (pthread_t*)malloc(sizeof(pthread_t));
     timer_thread_t *object = (timer_thread_t*)(malloc(sizeof(timer_thread_t)));
     object->thread = thread;
-    object->nick = nick;
     object->seconds = seconds;
-    object->channel = channel;
+    strncpy(object->nick, nick, 32);
+    strncpy(object->channel, channel, 32);
     pthread_create(thread, 0, &timer_thread, object);
     pthread_detach(*thread);
 }
-
 
