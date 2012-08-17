@@ -56,8 +56,9 @@ void log_init()
 	PQclear(result);
 
 	// URL queries
-	result = PQprepare(connection, "create_url", "INSERT INTO links(nick_id, link, created_at, times_posted) VALUES ((SELECT nick_id FROM nick WHERE nick = $1), $2, NOW(), 1)", 0, 0);
+	result = PQprepare(connection, "create_url", "INSERT INTO links(nick_id, link, created_at, times_posted) VALUES ((SELECT id FROM nicks WHERE nick = $1), $2, NOW(), 1)", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		printf(PQresultErrorMessage(result));
 		PQclear(result);
 		printf(" ! Unable to create prepared function (create_url)!\n");
 		log_abort();
@@ -84,8 +85,9 @@ void log_init()
 	PQclear(result);
 
 	// Other queries
-	result = PQprepare(connection, "log_message", "INSERT INTO logs((SELECT nick_id from nicks WHERE nick = $1), text, created_at) VALUES ($2, $3, NOW())", 0, 0);
+	result = PQprepare(connection, "log_message", "INSERT INTO logs(nick_id, text, created_at) VALUES ($1, $2, NOW())", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		printf(PQresultErrorMessage(result));
 		PQclear(result);
 		printf(" ! Unable to create prepared function (log_message)!\n");
 		log_abort();
@@ -96,7 +98,7 @@ void log_init()
 	result = PQprepare(connection, "log_eightball", "INSERT INTO eightball_logs(nick_id,query,answer,created_at) VALUES ($1, $2, $3, NOW())", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
 		PQclear(result);
-		printf(" ! Unable to create prepared function (log_message)!\n");
+		printf(" ! Unable to create prepared function (log_eightball)!\n");
 		log_abort();
 		return;
 	}
@@ -195,7 +197,7 @@ void log_url(struct recv_data *in, const char *url)
 		char *nick = PQgetvalue(link_result, 0, 0);
 		char *date = PQgetvalue(link_result, 0, 2);
 		char buf[90 + strlen(in->channel) + strlen(in->nick) + strlen(times_posted) + strlen(nick) + strlen(date)];
-		sprintf(buf, "PRIVMSG %s :%s: OLD! Your link has been posted %s times and was first posted by %s at %s",
+		sprintf(buf, "PRIVMSG %s :%s: OLD! Your link has been posted %s times and was first posted by %s at %s\n",
 				in->channel, 
 				in->nick, 
 				times_posted, 
