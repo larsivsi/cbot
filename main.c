@@ -129,6 +129,7 @@ int main(int argc, char **argv)
 
 	int err, recv_size;
 	char buffer[BUFFER_SIZE];
+	char input[BUFFER_SIZE];
 	struct addrinfo hints;
 	struct addrinfo *srv;
 	memset(&hints, 0, sizeof(hints));
@@ -166,7 +167,6 @@ int main(int argc, char **argv)
 
 	while (select(socket_fd+1, &socket_set, 0, 0, 0) != -1) {
 		if (FD_ISSET(STDIN_FILENO, &socket_set)) {
-			char input[BUFFER_SIZE];
 			fgets(input, BUFFER_SIZE, stdin);
 			if (strcmp(input, "quit\n") == 0) {
 				printf(">> Bye!\n");

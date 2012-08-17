@@ -2,7 +2,7 @@
 #define COMMON_H
 
 // generic buffer size
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 4096
 
 extern int socket_fd;
 
