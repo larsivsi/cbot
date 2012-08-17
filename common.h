@@ -6,6 +6,8 @@
 // Buffers
 #define BUFFER 512
 
+extern int socket_fd;
+
 struct patterns {
 	pcre *privmsg;
 	pcre *kick;
@@ -17,7 +19,6 @@ struct patterns {
 extern struct patterns *patterns;
 
 // Prototypes
-void compile_patterns(struct patterns *patterns);
 void die(const char *msg, const char *err);
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
