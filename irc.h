@@ -16,4 +16,5 @@ void irc_terminate();
 int parse_input(char *msg, struct recv_data *in, struct patterns *patterns);
 void send_str(char *msg);
 
+/* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
 #endif//IRC_H

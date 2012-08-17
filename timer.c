@@ -47,3 +47,4 @@ void set_timer(const char *nick, const char *channel, unsigned int seconds)
     pthread_detach(*thread);
 }
 
+/* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
