@@ -100,7 +100,7 @@ int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, BUFFER);
 		// In case of privmsgs
 		if (strcmp(in->channel, config->nick) == 0)
-			strcpy(in->channel, in->nick);
+			strcpy(in->nick, in->channel);
 		return 1;
 	}
 	offsetcount = pcre_exec(patterns->kick, 0, msg, strlen(msg), 0, 0, offsets, 30);
