@@ -7,6 +7,14 @@ Why?
   It started as a bad joke, then became a possible replacement for the IRC-bot
   "gangbot", written in ruby: https://github.com/larsivsi/gangbot
 
+Features:
+ * Configurable through a config file
+ * Timer
+ * Fetch titles from URLs
+ * Logging to a postgresql database (for integration with stats generation).
+ * Decision maker ("eightball")
+ * Auto rejoin on kick
+
 Authors:
  * Lars-Ivar Simonsen (larsivsi)
  * Martin Sandsmark (sandsmark)
