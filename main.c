@@ -93,14 +93,18 @@ int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	int offsets[30];
 	int offsetcount = pcre_exec(patterns->privmsg, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount == 6) {
+		printf("lol: %s\n", msg);
 		pcre_copy_substring(msg, offsets, offsetcount, 1, in->nick, 32);
 		pcre_copy_substring(msg, offsets, offsetcount, 2, in->user, 32);
 		pcre_copy_substring(msg, offsets, offsetcount, 3, in->server, 64);
 		pcre_copy_substring(msg, offsets, offsetcount, 4, in->channel, 32);
 		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, BUFFER);
 		// In case of privmsgs
-		if (strcmp(in->channel, config->nick) == 0)
+		if (strcmp(in->channel, config->nick) == 0) {
+			printf("%s : %s \n", in->channel, in->nick);
 			strcpy(in->channel, in->nick);
+			printf("%s : %s \n", in->channel, in->nick);
+		}
 		return 1;
 	}
 	offsetcount = pcre_exec(patterns->kick, 0, msg, strlen(msg), 0, 0, offsets, 30);
