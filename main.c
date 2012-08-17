@@ -4,6 +4,7 @@
 #include "eightball.h"
 #include "log.h"
 #include "title.h"
+#include "timer.h"
 
 #include <curl/curl.h>
 #include <errno.h>
