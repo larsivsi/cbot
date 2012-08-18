@@ -16,11 +16,13 @@
 #include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
 
 struct patterns *patterns;
+struct timeval t_begin, t_now;
 int socket_fd;
 
 void compile_patterns(struct patterns *patterns)
@@ -55,6 +57,11 @@ void compile_patterns(struct patterns *patterns)
 	pattern = "!timer (\\d{1,4})";
 	if ((patterns->timer = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile timer", 0);
+
+	// Uptime
+	pattern = "!uptime";
+	if ((patterns->uptime = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile uptime", 0);
 }
 
 void free_patterns(struct patterns *patterns)
@@ -65,12 +72,55 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->html_title);
 	pcre_free(patterns->eightball);
 	pcre_free(patterns->timer);
+	pcre_free(patterns->uptime);
 }
 
 void die(const char *msg, const char *error)
 {
 	fprintf(stderr, "%s: %s\n", msg, error);
 	exit(1);
+}
+
+void tic()
+{
+	gettimeofday(&t_begin, 0);
+}
+
+// Returns uptime in usecs
+long toc()
+{
+	gettimeofday(&t_now, 0);
+	return (t_now.tv_sec-t_begin.tv_sec)*1000000 + t_now.tv_usec-t_begin.tv_usec;
+}
+
+void uptime_in_stf(long secs, char *buf)
+{
+	long mins = 0, hours = 0, days = 0;
+
+	if (secs >= 60)
+	{
+		mins = secs / 60;
+		secs = secs % 60;
+	}
+	if (mins >= 60)
+	{
+		hours = mins / 60;
+		mins = mins % 60;
+	}
+	if (hours >= 24)
+	{
+		days = hours / 24;;
+		hours = hours % 24;
+	}
+
+	if (days > 0)
+		sprintf(buf, "%ldd %ldh %ldm %lds", days, hours, mins, secs);
+	else if (hours > 0)
+		sprintf(buf, "%ldh %ldm %lds", hours, mins, secs);
+	else if (mins > 0)
+		sprintf(buf, "%ldm %lds", mins, secs);
+	else
+		sprintf(buf, "%lds", secs);
 }
 
 void handle_input(struct recv_data *in, struct patterns *patterns)
@@ -106,10 +156,26 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 		int seconds = atoi(time)*60;
 		set_timer(in->nick, in->channel, seconds);
 	}
+
+	// Uptime
+	offsetcount = pcre_exec(patterns->uptime, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount > 0) {
+		long elapsed_secs = toc() / 1000000;
+		char *buf = (char*)malloc(BUFFER_SIZE);
+		char *stf = (char*)malloc(BUFFER_SIZE);
+		uptime_in_stf(elapsed_secs, stf);
+		sprintf(buf, "PRIVMSG %s :I have been operational for %ld seconds, aka. %s\n",
+			in->channel, elapsed_secs, stf);
+		send_str(buf);
+		free(buf);
+		free(stf);
+	}
+
 }
 
 int main(int argc, char **argv)
 {
+	tic();
 	config = malloc(sizeof(*config));
 	if (argc == 1) {
 		load_config("cbot.conf");

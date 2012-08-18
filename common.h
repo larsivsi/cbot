@@ -15,6 +15,7 @@ struct patterns {
 	pcre *html_title;
 	pcre *eightball;
 	pcre *timer;
+	pcre *uptime;
 };
 extern struct patterns *patterns;
 
