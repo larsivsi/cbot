@@ -20,10 +20,6 @@ size_t http_write_callback(void *contents, size_t element_size, size_t num_eleme
 		size = HTTP_BUFFER - http_buffer_pos;
 	}
 
-	if (size < 0) {
-		return 0;
-	}
-
 	memcpy(&http_buffer[http_buffer_pos], contents, size);
 	http_buffer_pos += size;
 	return element_size * num_elements;
