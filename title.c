@@ -33,7 +33,7 @@ void clean_spaces(char *str)
         if (str[i] != ' ' || str[i+1] != ' ')
             j++;
     }
-    str[j] = 0; // null terminate
+    str[++j] = 0; // null terminate
 }
 
 void strip_newlines(char *str)
