@@ -245,6 +245,10 @@ int main(int argc, char **argv)
 		}
 		else {
 			recv_size = recv(socket_fd, buffer, BUFFER_SIZE-1, 0);
+			if (recv_size == 0) {
+				printf(">> recv_size is 0, assuming closed remote socket!");
+				break;
+			}
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';
 			printf("%s", buffer);	
