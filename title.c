@@ -43,16 +43,23 @@ void strip_newlines(char *str)
 
 void get_title_from_url(struct recv_data *in, const char *url)
 {
-//	printf("Got url: %s\n", url);
-
 	http_buffer_pos = 0;
 	CURL *curl_handle = curl_easy_init();
 	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, &http_write_callback);
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 	//curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1);
-	curl_easy_perform(curl_handle);
+	int curl_err = curl_easy_perform(curl_handle);
 	curl_easy_cleanup(curl_handle);
+
+	// TODO: Find out when and why curl fails.
+	if (curl_err != 0) {
+		char *buf = malloc(strlen(in->channel) + 49);
+		sprintf(buf, "PRIVMSG %s :>> Curl error: Could not get title :/\n", in->channel);
+		send_str(buf);
+		free(buf);
+		return;
+	}
 
 	int titles[30];
 	int titlecount = pcre_exec(patterns->html_title, 0, http_buffer, HTTP_BUFFER, 0, 0, titles, 30);
@@ -61,7 +68,6 @@ void get_title_from_url(struct recv_data *in, const char *url)
 		pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER_SIZE);
 		strip_newlines(title);
 		clean_spaces(title);
-//		printf("got title: %s\n", title);
 		char *buf = malloc(strlen(in->channel) + strlen(title) + 15);
 		sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
 		send_str(buf);
