@@ -26,5 +26,7 @@ void eightball(struct recv_data *in, char *arguments)
 	send_str(buf);
 	free(buf);
 
-    log_eightball(in->nick, arguments, args[win]);
+	log_eightball(in->nick, arguments, args[win]);
 }
+
+/* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
