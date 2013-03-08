@@ -22,7 +22,7 @@ size_t http_write_callback(void *contents, size_t element_size, size_t num_eleme
 
 	memcpy(&http_buffer[http_buffer_pos], contents, size);
 	http_buffer_pos += size;
-	return element_size * num_elements;
+	return size;
 }
 
 void clean_spaces(char *str)
