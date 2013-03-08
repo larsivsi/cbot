@@ -52,12 +52,7 @@ void get_title_from_url(struct recv_data *in, const char *url)
 	int curl_err = curl_easy_perform(curl_handle);
 	curl_easy_cleanup(curl_handle);
 
-	// TODO: Find out when and why curl fails.
 	if (curl_err != 0) {
-		char *buf = malloc(strlen(in->channel) + 49);
-		sprintf(buf, "PRIVMSG %s :>> Curl error: Could not get title :/\n", in->channel);
-		send_str(buf);
-		free(buf);
 		return;
 	}
 
