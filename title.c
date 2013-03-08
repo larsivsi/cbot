@@ -62,7 +62,7 @@ void get_title_from_url(struct recv_data *in, const char *url)
 	}
 
 	int titles[30];
-	int titlecount = pcre_exec(patterns->html_title, 0, http_buffer, HTTP_BUFFER, 0, 0, titles, 30);
+	int titlecount = pcre_exec(patterns->html_title, 0, http_buffer, http_buffer_pos, 0, 0, titles, 30);
 	char title[BUFFER_SIZE];
 	if (titlecount > 0) {
 		pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER_SIZE);
