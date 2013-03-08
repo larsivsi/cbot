@@ -51,6 +51,8 @@ void get_title_from_url(struct recv_data *in, const char *url)
 	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, &http_write_callback);
 	curl_easy_setopt(curl_handle, CURLOPT_ERRORBUFFER, err_buf);
+	curl_easy_setopt(curl_handle, CURLOPT_FOLLOWLOCATION, 1);
+	curl_easy_setopt(curl_handle, CURLOPT_MAXREDIRS, 5);
 	curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
 	curl_err = curl_easy_perform(curl_handle);
 	curl_easy_cleanup(curl_handle);
