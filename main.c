@@ -72,6 +72,11 @@ void compile_patterns(struct patterns *patterns)
 	pattern = "!uptime";
 	if ((patterns->uptime = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile uptime", 0);
+
+	// Say command for the console
+	pattern = "say (\\S+) (.*)$";
+	if ((patterns->command_say = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile command_say", 0);
 }
 
 void free_patterns(struct patterns *patterns)
@@ -84,6 +89,7 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->eightball);
 	pcre_free(patterns->timer);
 	pcre_free(patterns->uptime);
+	pcre_free(patterns->command_say);
 }
 
 void die(const char *msg, const char *error)
@@ -325,6 +331,18 @@ int main(int argc, char **argv)
 			} else if (strcmp(input, "upgrade\n") == 0) {
 				system("(git pull && make) &");
 				printf(" >> Upgrading...\n");
+			} else if (strncmp(input, "say ", 4) == 0) {
+				int offsets[30];
+				int offsetcount = pcre_exec(patterns->command_say, 0, input, strlen(input), 0, 0, offsets, 30);
+				if (offsetcount > 0) {
+					char channel[BUFFER_SIZE];
+					char message[BUFFER_SIZE];
+					pcre_copy_substring(input, offsets, offsetcount, 1, channel, BUFFER_SIZE);
+					pcre_copy_substring(input, offsets, offsetcount, 2, message, BUFFER_SIZE);
+					char sendbuf[strlen("PRIVMSG  : ") + strlen(channel) + strlen(message)];
+					sprintf(sendbuf, "PRIVMSG %s :%s\n", channel, message);
+					send_str(sendbuf);
+				}
 			} else {
 				printf(" >> Unrecognized command. Try 'quit'\n");
 			}
