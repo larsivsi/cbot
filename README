@@ -18,6 +18,10 @@ Features:
  * Reload of everything (program code and config)
  * Magic git pull and rebuild
 
+TODO:
+ * Package tracking
+ * Split lines from server (strtok on newlines)
+
 Authors:
  * Lars-Ivar Simonsen (larsivsi)
  * Martin Sandsmark (sandsmark)
