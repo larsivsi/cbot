@@ -273,13 +273,15 @@ int main(int argc, char **argv)
 				config->user, config->nick, config->nick);
 		send_str(buffer);
 
+	} else { // In-place upgrade yo
+		printf(" >> Already connected, upgraded in-place!\n");
+	}
+	{
 		int i=0;
 		while (config->channels[i]) {
 			sprintf(buffer, "JOIN %s\n", config->channels[i++]);
 			send_str(buffer);
 		}
-	} else { // In-place upgrade yo
-		printf(" >> Already connected, upgraded in-place!\n");
 	}
 
 	struct recv_data *irc = malloc(sizeof(struct recv_data));
