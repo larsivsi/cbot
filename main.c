@@ -228,9 +228,13 @@ int main(int argc, char **argv)
 
 	char channels[BUFFER_SIZE];
 	for (int i = 0; config->channels[i] != NULL; i++) {
-		if (i > 0)
+		printf("%d: %s\n", i, config->channels[i]);
+		if (i > 0) {
 			strcat(channels, ",");
-		strcat(channels, config->channels[i]);
+			strcat(channels, config->channels[i]);
+		} else {
+			strcpy(channels, config->channels[i]);
+		}
 	}
 	// Set rand seed
 	srand(time(NULL));

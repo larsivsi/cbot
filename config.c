@@ -46,10 +46,11 @@ void set_config_param(char *parameter, char *value) {
 				count++;
 		}
 		config->channels = (char**)malloc(sizeof(char*) * (count+1));
+		config->channels[count] = NULL;
 		int i = 0;
 		char *channel = strtok(value, ",");
 		while (channel != NULL) {
-			config->channels[i] = (char*)malloc(strlen(channel));
+			config->channels[i] = (char*)malloc(strlen(channel) + 1);
 			strcpy(config->channels[i], channel);
 			i++;
 			channel = strtok(NULL, ",");
