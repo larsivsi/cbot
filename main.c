@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 			if (strcmp(input, "quit\n") == 0) {
 				printf(" >> Bye!\n");
 				break;
-			} else if (strcmp(input, "upgrade\n") == 0) {
+			} else if (strcmp(input, "reload\n") == 0) {
 				terminate();
 				free(irc);
 				free_patterns(patterns);
@@ -322,6 +322,9 @@ int main(int argc, char **argv)
 
 				printf(" !!! Execvp failing, giving up...\n");
 				exit(-1);
+			} else if (strcmp(input, "upgrade\n") == 0) {
+				system("(git pull && make) &");
+				printf(" >> Upgrading...\n");
 			} else {
 				printf(" >> Unrecognized command. Try 'quit'\n");
 			}
