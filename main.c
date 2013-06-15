@@ -29,13 +29,21 @@ void compile_patterns(struct patterns *patterns)
 {
 	const char *pcre_err;
 	int pcre_err_off;
+
 	// Privmsg
 	char *pattern = ":([^!]+)!([^@]+)@(\\S+)\\sPRIVMSG\\s(\\S+)\\s:([^\\b]+)";
 	if ((patterns->privmsg = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
 		die("pcre compile privmsg", 0);
-	pattern = ":([^!]+)!([^@]+)@(\\S+)\\sKICK\\s(\\S+)\\s(\\S+)\\s:";
+
 	// Kicks
+	pattern = ":([^!]+)!([^@]+)@(\\S+)\\sKICK\\s(\\S+)\\s(\\S+)\\s:";
 	if ((patterns->kick = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
+		die("pcre compile kick", 0);
+
+	// Joins
+	//pattern = ":([^!]+)!([^@]+@\\S+)\\sJOIN\\s(\\S+)\\s(\\S+)\\s:(\\S+)";
+	pattern = ":([^!]+)!([^@]+@\\S+)\\sJOIN\\s:(\\S+)";
+	if ((patterns->join = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
 		die("pcre compile kick", 0);
 
 	// Urls
@@ -49,10 +57,12 @@ void compile_patterns(struct patterns *patterns)
 	pattern = "<title>([^<]+)<\\/title>";
 	if ((patterns->html_title = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile title", 0);
+
 	// Eightball
 	pattern = "!8ball ([^$]+)";
 	if ((patterns->eightball = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile 8ball", 0);
+
 	// Timer
 	pattern = "!timer (\\d{1,4})";
 	if ((patterns->timer = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
@@ -68,6 +78,7 @@ void free_patterns(struct patterns *patterns)
 {
 	pcre_free(patterns->privmsg);
 	pcre_free(patterns->kick);
+	pcre_free(patterns->join);
 	pcre_free(patterns->url);
 	pcre_free(patterns->html_title);
 	pcre_free(patterns->eightball);
@@ -139,6 +150,18 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 		offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), offsets[1], 0, offsets, 30);
 	}
 
+	// Join, op?
+	offsetcount = pcre_exec(patterns->join, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount > 0) {
+		char nick[BUFFER_SIZE];
+		char identity[BUFFER_SIZE];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, nick, BUFFER_SIZE);
+		pcre_copy_substring(msg, offsets, offsetcount, 2, identity, BUFFER_SIZE);
+		printf("niggertits: %s kekeke %s\n", nick, identity);
+		free(nick);
+		free(identity);
+	}
+
 	// 8ball
 	offsetcount = pcre_exec(patterns->eightball, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount > 0) {
@@ -176,7 +199,7 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 int main(int argc, char **argv)
 {
 	tic();
-	config = malloc(sizeof(*config));
+	config = malloc(sizeof(struct config));
 	if (argc == 1) {
 		load_config("cbot.conf");
 	} else if (argc == 2) {

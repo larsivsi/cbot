@@ -10,6 +10,7 @@ struct config {
 	char *port;
 	char *channels;
 	char *db_connection_string;
+	char **ops;
 };
 extern struct config *config;
 

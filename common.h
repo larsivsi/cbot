@@ -10,6 +10,7 @@ typedef struct real_pcre pcre;
 
 struct patterns {
 	pcre *privmsg;
+	pcre *join;
 	pcre *kick;
 	pcre *url;
 	pcre *html_title;
