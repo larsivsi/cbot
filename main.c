@@ -42,9 +42,9 @@ void compile_patterns(struct patterns *patterns)
 
 	// Joins
 	//pattern = ":([^!]+)!([^@]+@\\S+)\\sJOIN\\s(\\S+)\\s(\\S+)\\s:(\\S+)";
-	pattern = ":([^!]+)!([^@]+@\\S+)\\sJOIN\\s:(\\S+)";
+	pattern = ":([^!]+)!(\\S+)\\sJOIN\\s:(\\S+)";
 	if ((patterns->join = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
-		die("pcre compile kick", 0);
+		die("pcre compile join", 0);
 
 	// Urls
 	//    pattern = "\\b((?:(?:([a-z][\\w\\.-]+:/{1,3})|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|\\}\\]|[^\\s`!()\\[\\]{};:'\".,<>?])|[a-z0-9.\\-+_]+@[a-z0-9.\\-]+[.][a-z]{1,5}[^\\s/`!()\\[\\]{};:'\".,<>?]))";
@@ -148,18 +148,6 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 		get_title_from_url(in, url);
 		log_url(in, url);
 		offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), offsets[1], 0, offsets, 30);
-	}
-
-	// Join, op?
-	offsetcount = pcre_exec(patterns->join, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	if (offsetcount > 0) {
-		char nick[BUFFER_SIZE];
-		char identity[BUFFER_SIZE];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, nick, BUFFER_SIZE);
-		pcre_copy_substring(msg, offsets, offsetcount, 2, identity, BUFFER_SIZE);
-		printf("niggertits: %s kekeke %s\n", nick, identity);
-		free(nick);
-		free(identity);
 	}
 
 	// 8ball

@@ -21,12 +21,14 @@ int send_thread_running = 0;
 // Returns 1 on privmsg, 0 otherwise
 int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 {
+	// Ping
 	if (strncmp(msg, "PING :", 6) == 0) {
 		// Turn the ping into a pong :D
 		msg[1] = 'O';
 		send_str(msg);
 		return 0;
 	}
+	// Normal message
 	//TODO: check 30
 	int offsets[30];
 	int offsetcount = pcre_exec(patterns->privmsg, 0, msg, strlen(msg), 0, 0, offsets, 30);
@@ -44,6 +46,7 @@ int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		}*/
 		return 1;
 	}
+	// Kick
 	offsetcount = pcre_exec(patterns->kick, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount == 6) {
 		pcre_copy_substring(msg, offsets, offsetcount, 1, in->nick, 32);
@@ -59,6 +62,33 @@ int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 			send_str(rejoin);
 		}
 		return 0;
+	}
+
+	// Join
+	offsetcount = pcre_exec(patterns->join, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount > 0) {
+		char nick[BUFFER_SIZE];
+		char identity[BUFFER_SIZE];
+		char channel[BUFFER_SIZE];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, nick, BUFFER_SIZE);
+		pcre_copy_substring(msg, offsets, offsetcount, 2, identity, BUFFER_SIZE);
+		pcre_copy_substring(msg, offsets, offsetcount, 3, channel, BUFFER_SIZE);
+
+		int valid = 0;
+		int i=0;
+
+		while (config->ops[i]) {
+			if (!strcmp(config->ops[i++], identity)) {
+				valid = 1;
+				break;
+			}
+		}
+
+		if (valid) {
+			char buf[strlen("MODE  +o \n") + strlen(channel) + strlen(nick)];
+			sprintf(buf, "MODE %s +o %s\n", channel, nick); 
+			send_str(buf);
+		}
 	}
 	return 0;
 }
