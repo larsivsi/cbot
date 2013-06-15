@@ -116,7 +116,7 @@ void log_terminate()
 int count_words(const char *string)
 {
 	int words = 1;
-	for (int i=0; i<strlen(string); i++) {
+	for (unsigned int i=0; i<strlen(string); i++) {
 		if (string[i] == ' ') {
 			words++;
 			while (string[i] == ' ') {

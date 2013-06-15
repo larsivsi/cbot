@@ -97,7 +97,7 @@ void send_str(char *msg)
 {
 	pthread_mutex_lock(send_mutex);
 
-	int length = strlen(msg);
+	unsigned int length = strlen(msg);
 	// Check if we have enough space
 	if (length > send_buffer_size - send_buffer_used) {
 		int new_buffer_size = send_buffer_size + BUFFER_SIZE;
@@ -120,6 +120,8 @@ void send_str(char *msg)
 
 void *send_loop(void *arg)
 {
+	(void)arg; // We don't need this from pthread
+
 	pthread_mutex_lock(send_mutex);
 	// Tell main thread that mutex is locked
 	pthread_barrier_wait(startup_barr);

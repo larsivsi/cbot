@@ -399,7 +399,7 @@ char *u8_strchr(char *s, uint32_t ch, int *charn)
 
 char *u8_memchr(char *s, uint32_t ch, size_t sz, int *charn)
 {
-    int i = 0, lasti=0;
+    unsigned int i = 0, lasti=0;
     uint32_t c;
     int csz;
 

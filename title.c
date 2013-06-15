@@ -15,6 +15,8 @@ size_t http_buffer_pos;
 
 size_t http_write_callback(void *contents, size_t element_size, size_t num_elements, void *userpointer)
 {
+	(void)userpointer; // We don't need this from curl
+
 	size_t size = element_size * num_elements;
 
 	if (size + http_buffer_pos > HTTP_BUFFER) {
@@ -28,7 +30,7 @@ size_t http_write_callback(void *contents, size_t element_size, size_t num_eleme
 
 void clean_spaces(char *str)
 {
-	int i,j;
+	unsigned int i,j;
 	for (i=j=0; i<strlen(str) - 1; i++) {
 		str[j] = str[i];
 		if (str[i] != ' ' || str[i+1] != ' ')
@@ -39,7 +41,7 @@ void clean_spaces(char *str)
 
 void strip_newlines(char *str)
 {
-	for (int i=0; i<strlen(str); i++) if (str[i] == '\n') str[i] = ' ';
+	for (unsigned int i=0; i<strlen(str); i++) if (str[i] == '\n') str[i] = ' ';
 }
 
 void get_title_from_url(struct recv_data *in, const char *url)
