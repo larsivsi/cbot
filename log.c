@@ -58,9 +58,8 @@ void log_init()
 	// URL queries
 	result = PQprepare(connection, "create_url", "INSERT INTO links(nick_id, link, created_at, times_posted) VALUES ((SELECT id FROM nicks WHERE nick = $1), $2, NOW(), 1)", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-		printf(PQresultErrorMessage(result));
 		PQclear(result);
-		printf(" ! Unable to create prepared function (create_url)!\n");
+		printf(" ! Unable to create prepared function (create_url): %s\n", PQresultErrorMessage(result));
 		log_abort();
 		return;
 	}
@@ -87,9 +86,8 @@ void log_init()
 	// Other queries
 	result = PQprepare(connection, "log_message", "INSERT INTO logs(nick_id, text, created_at) VALUES ($1, $2, NOW())", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-		printf(PQresultErrorMessage(result));
 		PQclear(result);
-		printf(" ! Unable to create prepared function (log_message)!\n");
+		printf(" ! Unable to create prepared function (log_message): %s\n", PQresultErrorMessage(result));
 		log_abort();
 		return;
 	}
