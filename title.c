@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "irc.h"
+#include "entities.h"
 
 #include <curl/curl.h>
 #include <string.h>
@@ -70,6 +71,7 @@ void get_title_from_url(struct recv_data *in, const char *url)
 		pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER_SIZE);
 		strip_newlines(title);
 		clean_spaces(title);
+		decode_html_entities_utf8(title, NULL);
 		char *buf = malloc(strlen(in->channel) + strlen(title) + 15);
 		sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
 		send_str(buf);
