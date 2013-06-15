@@ -67,20 +67,17 @@ void set_config_param(char *parameter, char *value) {
 		int op_count = 1;
 		for (int i=0; value[i] != '\0'; i++)
 			if (value[i] == ',') op_count++;
-		printf("op count: %d\nops: ", op_count);
 
 		config->ops = malloc(sizeof(char*) * (op_count+1));
 		config->ops[op_count] = NULL;
 		char *op = strtok(value, ",");
 		int i=0;
 		while (op != NULL) {
-			printf("%s ", op);
 			config->ops[i] = malloc(strlen(op) + 1);
 			strcpy(config->ops[i], op);
 			i++;
 			op = strtok(NULL, ",");
 		}
-		printf("\n");
 	}
 	else {
 		printf("WARNING: Unknown config parameter \'%s\' with value \'%s\'!\n", parameter, value);

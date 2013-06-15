@@ -218,7 +218,7 @@ int main(int argc, char **argv)
 			}
 			socket_fd = atoi(argv[++i]);
 		} else {
-			printf("unknown option: %s\n", argv[i]);
+			printf(" >> unknown option: %s\n", argv[i]);
 		}
 	}
 
@@ -228,7 +228,6 @@ int main(int argc, char **argv)
 
 	char channels[BUFFER_SIZE];
 	for (int i = 0; config->channels[i] != NULL; i++) {
-		printf("%d: %s\n", i, config->channels[i]);
 		if (i > 0) {
 			strcat(channels, ",");
 			strcat(channels, config->channels[i]);
@@ -270,9 +269,15 @@ int main(int argc, char **argv)
 		freeaddrinfo(srv);
 
 		// Join
-		sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN %s\n",
-				config->user, config->nick, config->nick, channels);
+		sprintf(buffer, "USER %s host realmname :%s\nNICK %s\n",
+				config->user, config->nick, config->nick);
 		send_str(buffer);
+
+		int i=0;
+		while (config->channels[i]) {
+			sprintf(buffer, "JOIN %s\n", config->channels[i++]);
+			send_str(buffer);
+		}
 	} else { // In-place upgrade yo
 		printf(" >> Already connected, upgraded in-place!\n");
 	}
@@ -291,7 +296,7 @@ int main(int argc, char **argv)
 		if (FD_ISSET(STDIN_FILENO, &socket_set)) {
 			fgets(input, BUFFER_SIZE, stdin);
 			if (strcmp(input, "quit\n") == 0) {
-				printf(">> Bye!\n");
+				printf(" >> Bye!\n");
 				break;
 			} else if (strcmp(input, "upgrade\n") == 0) {
 				terminate();
@@ -310,20 +315,20 @@ int main(int argc, char **argv)
 				arguments[4] = fdstring;
 				arguments[5] = NULL;
 
-				printf(">> Upgrading...\n");
+				printf(" >> Upgrading...\n");
 				execvp(argv[0], arguments);
 
 				printf(" !!! Execvp failing, giving up...\n");
 				exit(-1);
 			} else {
-				printf(">> Unrecognized command. Try 'quit'\n");
+				printf(" >> Unrecognized command. Try 'quit'\n");
 			}
 			FD_SET(socket_fd, &socket_set);
 		}
 		else {
 			recv_size = recv(socket_fd, buffer, BUFFER_SIZE-1, 0);
 			if (recv_size == 0) {
-				printf(">> recv_size is 0, assuming closed remote socket!");
+				printf(" >> recv_size is 0, assuming closed remote socket!");
 				break;
 			}
 			// Add \0 to terminate string
