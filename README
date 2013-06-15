@@ -14,6 +14,7 @@ Features:
  * Logging to a postgresql database (for integration with stats generation).
  * Decision maker ("eightball")
  * Auto rejoin on kick
+ * Auto op of joining users
 
 Authors:
  * Lars-Ivar Simonsen (larsivsi)
