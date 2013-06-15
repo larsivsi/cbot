@@ -184,28 +184,56 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 
 }
 
+void print_usage()
+{
+	printf("Usage: cbot [-c configfile]\n");
+	exit(0);
+}
+
+void terminate()
+{
+
+	log_terminate();
+	irc_terminate();
+	free_config();
+
+	curl_global_cleanup();
+}
+
 int main(int argc, char **argv)
 {
 	tic();
-	config = malloc(sizeof(struct config));
-	if (argc == 1) {
-		load_config("cbot.conf");
-	} else if (argc == 2) {
-		load_config(argv[1]);
-	} else {
-		printf("Usage: %s [configfile]\n", argv[0]);
-		exit(0);
+
+	char *conf_file = NULL;
+	socket_fd = -1;
+	for (int i=1; i<argc; i++) {
+		if (!strcmp(argv[i], "-c")) {
+			if (argc <= i) {
+				print_usage();
+			}
+			conf_file = argv[++i];
+		} else if (!strcmp(argv[i], "-fd")) {
+			if (argc <= i) {
+				print_usage();
+			}
+			socket_fd = atoi(argv[++i]);
+		} else {
+			printf("unknown option: %s\n", argv[i]);
+		}
 	}
+
+	if (!conf_file)
+		conf_file = "cbot.conf";
+	load_config(conf_file);
+
 	char channels[BUFFER_SIZE];
 	for (int i = 0; config->channels[i] != NULL; i++) {
 		if (i > 0)
 			strcat(channels, ",");
 		strcat(channels, config->channels[i]);
-		printf("%s\n", config->channels[i]);
 	}
-	printf("%s\n", channels);
-	printf(" - Connecting to %s:%s with nick %s, joining channels %s...\n",
-			config->host, config->port, config->nick, channels);
+	// Set rand seed
+	srand(time(NULL));
 
 	// Set up cURL
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -216,20 +244,38 @@ int main(int argc, char **argv)
 	int err, recv_size;
 	char buffer[BUFFER_SIZE];
 	char input[BUFFER_SIZE];
-	struct addrinfo hints;
-	struct addrinfo *srv;
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
 
-	// Connect
-	if ((err = getaddrinfo(config->host, config->port, &hints, &srv)) != 0)
-		die("getaddrinfo", gai_strerror(err));
-	if ((socket_fd = socket(srv->ai_family, srv->ai_socktype, 0)) < 0)
-		die("socket", gai_strerror(socket_fd));
-	if ((err = connect(socket_fd, srv->ai_addr, srv->ai_addrlen)) != 0)
-		die("connect", gai_strerror(err));
-	freeaddrinfo(srv);
+	irc_init();
+
+	if (socket_fd == -1) {
+		// Connect
+		printf(" - Connecting to %s:%s with nick %s, joining channels %s...\n",
+				config->host, config->port, config->nick, channels);
+
+		struct addrinfo hints;
+		struct addrinfo *srv;
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_family = AF_INET;
+		hints.ai_socktype = SOCK_STREAM;
+		if ((err = getaddrinfo(config->host, config->port, &hints, &srv)) != 0)
+			die("getaddrinfo", gai_strerror(err));
+		if ((socket_fd = socket(srv->ai_family, srv->ai_socktype, 0)) < 0)
+			die("socket", gai_strerror(socket_fd));
+		if ((err = connect(socket_fd, srv->ai_addr, srv->ai_addrlen)) != 0)
+			die("connect", gai_strerror(err));
+		freeaddrinfo(srv);
+
+		// Join
+		sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN %s\n",
+				config->user, config->nick, config->nick, channels);
+		send_str(buffer);
+	} else { // In-place upgrade yo
+		printf(" >> Already connected, upgraded in-place!\n");
+	}
+
+	struct recv_data *irc = malloc(sizeof(struct recv_data));
+	patterns = malloc(sizeof(*patterns));
+	compile_patterns(patterns);
 
 	// Select param
 	fd_set socket_set;
@@ -237,26 +283,34 @@ int main(int argc, char **argv)
 	FD_SET(STDIN_FILENO, &socket_set);
 	FD_SET(socket_fd, &socket_set);
 
-	irc_init();
-
-	// Set rand seed
-	srand(time(NULL));
-
-	// Join
-	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\nJOIN %s\n",
-		config->user, config->nick, config->nick, channels);
-	send_str(buffer);
-
-	struct recv_data *irc = malloc(sizeof(struct recv_data));
-	patterns = malloc(sizeof(*patterns));
-	compile_patterns(patterns);
-
 	while (select(socket_fd+1, &socket_set, 0, 0, 0) != -1) {
 		if (FD_ISSET(STDIN_FILENO, &socket_set)) {
 			fgets(input, BUFFER_SIZE, stdin);
 			if (strcmp(input, "quit\n") == 0) {
 				printf(">> Bye!\n");
 				break;
+			} else if (strcmp(input, "upgrade\n") == 0) {
+				terminate();
+				free(irc);
+				free_patterns(patterns);
+				free(patterns);
+
+				// Set up arguments
+				char * arguments[6];
+				arguments[0] = argv[0];
+				arguments[1] = "-c";
+				arguments[2] = conf_file;
+				arguments[3] = "-fd";
+				char fdstring[snprintf(NULL, 0, "%d", socket_fd)];
+				sprintf(fdstring, "%d", socket_fd);
+				arguments[4] = fdstring;
+				arguments[5] = NULL;
+
+				printf(">> Upgrading...\n");
+				execvp(argv[0], arguments);
+
+				printf(" !!! Execvp failing, giving up...\n");
+				exit(-1);
 			} else {
 				printf(">> Unrecognized command. Try 'quit'\n");
 			}
@@ -270,24 +324,22 @@ int main(int argc, char **argv)
 			}
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';
-			printf("%s", buffer);	
+			printf("%s", buffer);
 			// Only handle privmsg
 			if (parse_input(buffer, irc, patterns))
 				handle_input(irc, patterns);
 			FD_SET(STDIN_FILENO, &socket_set);
 		}
 	}
+	printf(" >> Socket closed, quitting...\n");
 
 	close(socket_fd);
+
 	free(irc);
 	free_patterns(patterns);
 	free(patterns);
 
-	log_terminate();
-	irc_terminate();
-	free_config();
-
-	curl_global_cleanup();
+	terminate();
 
 	return 0;
 }

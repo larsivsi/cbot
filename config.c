@@ -98,6 +98,7 @@ int read_line(FILE *file, char *line)
 int load_config(const char *filename)
 {
 	FILE *config_file;
+	config = malloc(sizeof(struct config));
 
 	config_file = fopen(filename, "r");
 	if (config_file == 0) {
