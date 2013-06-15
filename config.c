@@ -40,8 +40,20 @@ void set_config_param(char *parameter, char *value) {
 		strcpy(config->port, value);
 	}
 	else if (!strcmp(parameter, "channels")) {
-		config->channels = malloc(strlen(value) + 1);
-		strcpy(config->channels, value);
+		int count = 1;
+		for (int i = 0; value[i] != '\0'; i++) {
+			if (value[i] == ',')
+				count++;
+		}
+		config->channels = (char**)malloc(sizeof(char*) * (count+1));
+		int i = 0;
+		char *channel = strtok(value, ",");
+		while (channel != NULL) {
+			config->channels[i] = (char*)malloc(strlen(channel));
+			strcpy(config->channels[i], channel);
+			i++;
+			channel = strtok(NULL, ",");
+		}
 	}
 	else if (!strcmp(parameter, "dbconnect")) {
 		config->db_connection_string = malloc(strlen(value) + 1);
