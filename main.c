@@ -139,10 +139,10 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 	log_message(in);
 
 	const char *msg = in->message;
-	int offsets[30];	
+	int offsets[30];
 	// Check URLs
 	int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	while (offsets[1] < strlen(msg) && offsetcount > 0) {
+	while (offsetcount > 0) {
 		char url[BUFFER_SIZE];
 		pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER_SIZE);
 		get_title_from_url(in, url);

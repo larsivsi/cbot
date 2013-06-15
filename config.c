@@ -10,14 +10,17 @@ struct config *config;
 
 void free_config()
 {
+	int i=0;
+	while (config->ops[i]) free(config->ops[i++]);
+	i=0;
+	while (config->channels[i]) free(config->channels[i++]);
 	free(config->nick);
 	free(config->user);
 	free(config->host);
 	free(config->port);
 	free(config->channels);
 	free(config->db_connection_string);
-	int i=0;
-	while (config->ops[i]) free(config->ops[i++]);
+
 	free(config->ops);
 	free(config);
 }
