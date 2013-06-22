@@ -14,9 +14,9 @@ struct patterns {
 	pcre *kick;
 	pcre *url;
 	pcre *html_title;
-	pcre *eightball;
-	pcre *timer;
-	pcre *uptime;
+	pcre *command_eightball;
+	pcre *command_timer;
+	pcre *command_uptime;
 	pcre *command_say;
 };
 extern struct patterns *patterns;

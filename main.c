@@ -60,17 +60,17 @@ void compile_patterns(struct patterns *patterns)
 
 	// Eightball
 	pattern = "!8ball ([^$]+)";
-	if ((patterns->eightball = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+	if ((patterns->command_eightball = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile 8ball", 0);
 
 	// Timer
 	pattern = "!timer (\\d{1,4})";
-	if ((patterns->timer = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+	if ((patterns->command_timer = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile timer", 0);
 
 	// Uptime
 	pattern = "!uptime";
-	if ((patterns->uptime = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+	if ((patterns->command_uptime = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile uptime", 0);
 
 	// Say command for the console
@@ -86,9 +86,9 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->join);
 	pcre_free(patterns->url);
 	pcre_free(patterns->html_title);
-	pcre_free(patterns->eightball);
-	pcre_free(patterns->timer);
-	pcre_free(patterns->uptime);
+	pcre_free(patterns->command_eightball);
+	pcre_free(patterns->command_timer);
+	pcre_free(patterns->command_uptime);
 	pcre_free(patterns->command_say);
 }
 
@@ -157,7 +157,7 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 	}
 
 	// 8ball
-	offsetcount = pcre_exec(patterns->eightball, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	offsetcount = pcre_exec(patterns->command_eightball, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount > 0) {
 		char arguments[BUFFER_SIZE];
 		pcre_copy_substring(msg, offsets, offsetcount, 1, arguments, BUFFER_SIZE);
@@ -165,7 +165,7 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 	}
 
 	// Timer
-	offsetcount = pcre_exec(patterns->timer, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	offsetcount = pcre_exec(patterns->command_timer, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount > 0) {
 		// We limit at 4 digits
 		char time[4];
@@ -175,7 +175,7 @@ void handle_input(struct recv_data *in, struct patterns *patterns)
 	}
 
 	// Uptime
-	offsetcount = pcre_exec(patterns->uptime, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	offsetcount = pcre_exec(patterns->command_uptime, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount > 0) {
 		long elapsed_secs = toc() / 1000000;
 		char *buf = (char*)malloc(BUFFER_SIZE);
