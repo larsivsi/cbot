@@ -19,7 +19,9 @@ Features:
  * Magic git pull and rebuild
 
 TODO:
- * Package tracking
+ * More generic fetch-url-and-look-for-pattern
+  * Package tracking
+  * Fetch last tweet from twitter user
  * Split lines from server (strtok on newlines)
 
 Authors:
