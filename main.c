@@ -7,7 +7,6 @@
 #include "timer.h"
 #include "irc.h"
 
-#include <curl/curl.h>
 #include <pcre.h>
 #include <errno.h>
 #include <netdb.h>
@@ -20,6 +19,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <curl/curl.h>
 
 struct patterns *patterns;
 struct timeval t_begin, t_now;
@@ -110,86 +110,6 @@ long toc()
 	return (t_now.tv_sec-t_begin.tv_sec)*1000000 + t_now.tv_usec-t_begin.tv_usec;
 }
 
-void uptime_in_stf(long secs, char *buf)
-{
-	long mins = 0, hours = 0, days = 0;
-
-	if (secs >= 60)
-	{
-		mins = secs / 60;
-		secs = secs % 60;
-	}
-	if (mins >= 60)
-	{
-		hours = mins / 60;
-		mins = mins % 60;
-	}
-	if (hours >= 24)
-	{
-		days = hours / 24;;
-		hours = hours % 24;
-	}
-
-	if (days > 0)
-		sprintf(buf, "%ldd %ldh %ldm %lds", days, hours, mins, secs);
-	else if (hours > 0)
-		sprintf(buf, "%ldh %ldm %lds", hours, mins, secs);
-	else if (mins > 0)
-		sprintf(buf, "%ldm %lds", mins, secs);
-	else
-		sprintf(buf, "%lds", secs);
-}
-
-void handle_input(struct recv_data *in, struct patterns *patterns)
-{
-	log_message(in);
-
-	const char *msg = in->message;
-	int offsets[30];
-	// Check URLs
-	int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	while (offsetcount > 0) {
-		char url[BUFFER_SIZE];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER_SIZE);
-		get_title_from_url(in, url);
-		log_url(in, url);
-		offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), offsets[1], 0, offsets, 30);
-	}
-
-	// 8ball
-	offsetcount = pcre_exec(patterns->command_eightball, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	if (offsetcount > 0) {
-		char arguments[BUFFER_SIZE];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, arguments, BUFFER_SIZE);
-		eightball(in, arguments);
-	}
-
-	// Timer
-	offsetcount = pcre_exec(patterns->command_timer, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	if (offsetcount > 0) {
-		// We limit at 4 digits
-		char time[4];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, time, 4);
-		int seconds = atoi(time)*60;
-		set_timer(in->nick, in->channel, seconds);
-	}
-
-	// Uptime
-	offsetcount = pcre_exec(patterns->command_uptime, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	if (offsetcount > 0) {
-		long elapsed_secs = toc() / 1000000;
-		char *buf = (char*)malloc(BUFFER_SIZE);
-		char *stf = (char*)malloc(BUFFER_SIZE);
-		uptime_in_stf(elapsed_secs, stf);
-		sprintf(buf, "PRIVMSG %s :I have been operational for %ld seconds, aka. %s\n",
-			in->channel, elapsed_secs, stf);
-		send_str(buf);
-		free(buf);
-		free(stf);
-	}
-
-}
-
 void print_usage()
 {
 	printf("Usage: cbot [-c configfile]\n");
@@ -277,7 +197,7 @@ int main(int argc, char **argv)
 		// Join
 		sprintf(buffer, "USER %s host realmname :%s\nNICK %s\n",
 				config->user, config->nick, config->nick);
-		send_str(buffer);
+		irc_send_str(buffer);
 
 	} else { // In-place upgrade yo
 		printf(" >> Already connected, upgraded in-place!\n");
@@ -286,7 +206,7 @@ int main(int argc, char **argv)
 		int i=0;
 		while (config->channels[i]) {
 			sprintf(buffer, "JOIN %s\n", config->channels[i++]);
-			send_str(buffer);
+			irc_send_str(buffer);
 		}
 	}
 
@@ -341,7 +261,7 @@ int main(int argc, char **argv)
 					pcre_copy_substring(input, offsets, offsetcount, 2, message, BUFFER_SIZE);
 					char sendbuf[strlen("PRIVMSG  : ") + strlen(channel) + strlen(message)];
 					sprintf(sendbuf, "PRIVMSG %s :%s\n", channel, message);
-					send_str(sendbuf);
+					irc_send_str(sendbuf);
 				}
 			} else {
 				printf(" >> Unrecognized command. Try 'quit'\n");
@@ -358,8 +278,8 @@ int main(int argc, char **argv)
 			buffer[recv_size] = '\0';
 			printf("%s", buffer);
 			// Only handle privmsg
-			if (parse_input(buffer, irc, patterns))
-				handle_input(irc, patterns);
+			if (irc_parse_input(buffer, irc, patterns))
+				irc_handle_input(irc, patterns);
 			FD_SET(STDIN_FILENO, &socket_set);
 		}
 	}

@@ -22,7 +22,7 @@ static void *timer_thread(void *argument)
 	sleep(object->seconds);
 	char buf[strlen(object->channel) + strlen(object->nick) + 18];
 	sprintf(buf, "PRIVMSG %s :%s: DING!\n", object->channel, object->nick);
-	send_str(buf);
+	irc_send_str(buf);
 	free(object->thread);
 	free(object);
 
@@ -34,7 +34,7 @@ void set_timer(const char *nick, const char *channel, unsigned int seconds)
 	// Tell the user how long he has to wait
 	char buf[strlen(channel) + 37/*constant text*/ + 11 /*maximum length of the unsigned int*/];
 	sprintf(buf, "PRIVMSG %s :Notifying you in %d seconds\n", channel, seconds);
-	send_str(buf);
+	irc_send_str(buf);
 
 	// Create a thread that will sleep for the specified amount of time before suiciding
 	pthread_t *thread = (pthread_t*)malloc(sizeof(pthread_t));

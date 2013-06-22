@@ -23,7 +23,7 @@ void eightball(struct recv_data *in, char *arguments)
 	char *buf = (char*)malloc(BUFFER_SIZE);
 	sprintf(buf, "PRIVMSG %s :%s: the answer to your question is: %s\n",
 			in->channel, in->nick, args[win]);
-	send_str(buf);
+	irc_send_str(buf);
 	free(buf);
 
 	log_eightball(in->nick, arguments, args[win]);

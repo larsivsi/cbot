@@ -1,13 +1,19 @@
 #include "irc.h"
 
 #include "config.h"
+#include "eightball.h"
+#include "log.h"
+#include "title.h"
+#include "timer.h"
 
-#include <pthread.h>
 #include <errno.h>
-#include <string.h>
-#include <netdb.h>
-#include <stdlib.h>
 #include <pcre.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
 
 char *send_buffer = 0;
 size_t send_buffer_size = 0;
@@ -18,14 +24,44 @@ pthread_barrier_t *startup_barr = 0;
 pthread_t *send_thread = 0;
 int send_thread_running = 0;
 
+void uptime_in_stf(long secs, char *buf)
+{
+	long mins = 0, hours = 0, days = 0;
+
+	if (secs >= 60)
+	{
+		mins = secs / 60;
+		secs = secs % 60;
+	}
+	if (mins >= 60)
+	{
+		hours = mins / 60;
+		mins = mins % 60;
+	}
+	if (hours >= 24)
+	{
+		days = hours / 24;;
+		hours = hours % 24;
+	}
+
+	if (days > 0)
+		sprintf(buf, "%ldd %ldh %ldm %lds", days, hours, mins, secs);
+	else if (hours > 0)
+		sprintf(buf, "%ldh %ldm %lds", hours, mins, secs);
+	else if (mins > 0)
+		sprintf(buf, "%ldm %lds", mins, secs);
+	else
+		sprintf(buf, "%lds", secs);
+}
+
 // Returns 1 on privmsg, 0 otherwise
-int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
+int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 {
 	// Ping
 	if (strncmp(msg, "PING :", 6) == 0) {
 		// Turn the ping into a pong :D
 		msg[1] = 'O';
-		send_str(msg);
+		irc_send_str(msg);
 		return 0;
 	}
 	// Normal message
@@ -59,7 +95,7 @@ int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 			printf("Got kicked, rejoining\n");
 			char rejoin[40];
 			sprintf(rejoin, "JOIN %s\n", in->channel);
-			send_str(rejoin);
+			irc_send_str(rejoin);
 		}
 		return 0;
 	}
@@ -87,13 +123,13 @@ int parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		if (valid) {
 			char buf[strlen("MODE  +o \n") + strlen(channel) + strlen(nick)];
 			sprintf(buf, "MODE %s +o %s\n", channel, nick); 
-			send_str(buf);
+			irc_send_str(buf);
 		}
 	}
 	return 0;
 }
 
-void send_str(char *msg)
+void irc_send_str(char *msg)
 {
 	pthread_mutex_lock(send_mutex);
 
@@ -137,6 +173,57 @@ void *send_loop(void *arg)
 	}
 	return 0;
 }
+
+void irc_handle_input(struct recv_data *in, struct patterns *patterns)
+{
+	log_message(in);
+
+	const char *msg = in->message;
+	int offsets[30];
+	// Check URLs
+	int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	while (offsetcount > 0) {
+		char url[BUFFER_SIZE];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER_SIZE);
+		get_title_from_url(in, url);
+		log_url(in, url);
+		offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), offsets[1], 0, offsets, 30);
+	}
+
+	// 8ball
+	offsetcount = pcre_exec(patterns->command_eightball, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount > 0) {
+		char arguments[BUFFER_SIZE];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, arguments, BUFFER_SIZE);
+		eightball(in, arguments);
+	}
+
+	// Timer
+	offsetcount = pcre_exec(patterns->command_timer, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount > 0) {
+		// We limit at 4 digits
+		char time[4];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, time, 4);
+		int seconds = atoi(time)*60;
+		set_timer(in->nick, in->channel, seconds);
+	}
+
+	// Uptime
+	offsetcount = pcre_exec(patterns->command_uptime, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount > 0) {
+		long elapsed_secs = toc() / 1000000;
+		char *buf = (char*)malloc(BUFFER_SIZE);
+		char *stf = (char*)malloc(BUFFER_SIZE);
+		uptime_in_stf(elapsed_secs, stf);
+		sprintf(buf, "PRIVMSG %s :I have been operational for %ld seconds, aka. %s\n",
+			in->channel, elapsed_secs, stf);
+		irc_send_str(buf);
+		free(buf);
+		free(stf);
+	}
+
+}
+
 
 void irc_init()
 {

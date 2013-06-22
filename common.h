@@ -23,6 +23,7 @@ extern struct patterns *patterns;
 
 // Prototypes
 void die(const char *msg, const char *err);
+long toc();
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
 #endif//COMMON_H

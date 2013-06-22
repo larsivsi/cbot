@@ -76,7 +76,7 @@ void get_title_from_url(struct recv_data *in, const char *url)
 		decode_html_entities_utf8(title, NULL);
 		char *buf = malloc(strlen(in->channel) + strlen(title) + 15);
 		sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
-		send_str(buf);
+		irc_send_str(buf);
 		free(buf);
 	}
 }
