@@ -95,6 +95,7 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->command_timer);
 	pcre_free(patterns->command_uptime);
 	pcre_free(patterns->command_say);
+	pcre_free(patterns->command_twitter);
 }
 
 void die(const char *msg, const char *error)
