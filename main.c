@@ -77,6 +77,11 @@ void compile_patterns(struct patterns *patterns)
 	pattern = "say (\\S+) (.*)$";
 	if ((patterns->command_say = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile command_say", 0);
+
+	// Twitter
+	pattern = "!twitter";
+	if ((patterns->command_twitter = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile twitter", 0);
 }
 
 void free_patterns(struct patterns *patterns)
@@ -126,6 +131,44 @@ void terminate()
 	curl_global_cleanup();
 }
 
+void join_channels()
+{
+	int i=0;
+	while (config->channels[i]) {
+		char buffer[strlen("JOIN \n") + strlen(config->channels[i])];
+		sprintf(buffer, "JOIN %s\n", config->channels[i++]);
+		irc_send_str(buffer);
+	}
+}
+
+void net_connect()
+{
+	int err;
+	// Connect
+
+	struct addrinfo hints;
+	struct addrinfo *srv;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+	if ((err = getaddrinfo(config->host, config->port, &hints, &srv)) != 0)
+		die("getaddrinfo", gai_strerror(err));
+	if ((socket_fd = socket(srv->ai_family, srv->ai_socktype, 0)) < 0)
+		die("socket", gai_strerror(socket_fd));
+	if ((err = connect(socket_fd, srv->ai_addr, srv->ai_addrlen)) != 0)
+		die("connect", gai_strerror(err));
+	freeaddrinfo(srv);
+
+	// Join
+	printf("connecting...\n");
+	char buffer[strlen("USER  host realmname :\nNICK \n") + strlen(config->user) + strlen(config->nick) + strlen(config->nick)];
+	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\n",
+			config->user, config->nick, config->nick);
+	irc_send_str(buffer);
+
+	join_channels();
+}
+
 int main(int argc, char **argv)
 {
 	tic();
@@ -170,44 +213,20 @@ int main(int argc, char **argv)
 	// Set up db connection for logging
 	log_init();
 
-	int err, recv_size;
+	int recv_size;
 	char buffer[BUFFER_SIZE];
 	char input[BUFFER_SIZE];
 
 	irc_init();
 
 	if (socket_fd == -1) {
-		// Connect
 		printf(" - Connecting to %s:%s with nick %s, joining channels %s...\n",
-				config->host, config->port, config->nick, channels);
-
-		struct addrinfo hints;
-		struct addrinfo *srv;
-		memset(&hints, 0, sizeof(hints));
-		hints.ai_family = AF_INET;
-		hints.ai_socktype = SOCK_STREAM;
-		if ((err = getaddrinfo(config->host, config->port, &hints, &srv)) != 0)
-			die("getaddrinfo", gai_strerror(err));
-		if ((socket_fd = socket(srv->ai_family, srv->ai_socktype, 0)) < 0)
-			die("socket", gai_strerror(socket_fd));
-		if ((err = connect(socket_fd, srv->ai_addr, srv->ai_addrlen)) != 0)
-			die("connect", gai_strerror(err));
-		freeaddrinfo(srv);
-
-		// Join
-		sprintf(buffer, "USER %s host realmname :%s\nNICK %s\n",
-				config->user, config->nick, config->nick);
-		irc_send_str(buffer);
-
+			config->host, config->port, config->nick, channels);
+		close(socket_fd);
+		net_connect();
 	} else { // In-place upgrade yo
 		printf(" >> Already connected, upgraded in-place!\n");
-	}
-	{
-		int i=0;
-		while (config->channels[i]) {
-			sprintf(buffer, "JOIN %s\n", config->channels[i++]);
-			irc_send_str(buffer);
-		}
+		join_channels();
 	}
 
 	struct recv_data *irc = malloc(sizeof(struct recv_data));
@@ -220,7 +239,13 @@ int main(int argc, char **argv)
 	FD_SET(STDIN_FILENO, &socket_set);
 	FD_SET(socket_fd, &socket_set);
 
-	while (select(socket_fd+1, &socket_set, 0, 0, 0) != -1) {
+	while (1) {
+		int ret = select(socket_fd+1, &socket_set, 0, 0, 0);
+		if (ret == -1) {
+			printf(" >> Disconnected, reconnecting...\n");
+			close(socket_fd);
+			net_connect();
+		}
 		if (FD_ISSET(STDIN_FILENO, &socket_set)) {
 			fgets(input, BUFFER_SIZE, stdin);
 			if (strcmp(input, "quit\n") == 0) {
@@ -271,8 +296,11 @@ int main(int argc, char **argv)
 		else {
 			recv_size = recv(socket_fd, buffer, BUFFER_SIZE-1, 0);
 			if (recv_size == 0) {
-				printf(" >> recv_size is 0, assuming closed remote socket!");
-				break;
+				printf(" >> recv_size is 0, assuming closed remote socket, reconnecting\n");
+				close(socket_fd);
+				printf("closed\n");
+				net_connect();
+				printf("reconnected\n");
 			}
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';

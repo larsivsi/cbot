@@ -166,7 +166,8 @@ void *send_loop(void *arg)
 		while (send_buffer_used > 0) {
 			int sent = send(socket_fd, send_buffer, send_buffer_used, 0);
 			if (sent == -1) {
-				die("Unable to send", strerror(errno));
+				//die("Unable to send", strerror(errno));
+				//perror("Unable to send string: ");
 			}
 			send_buffer_used -= sent;
 		}

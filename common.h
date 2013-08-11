@@ -18,6 +18,8 @@ struct patterns {
 	pcre *command_timer;
 	pcre *command_uptime;
 	pcre *command_say;
+	pcre *command_twitter;
+	pcre *twitter;
 };
 extern struct patterns *patterns;
 
