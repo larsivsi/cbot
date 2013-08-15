@@ -14,6 +14,7 @@ struct patterns {
 	pcre *kick;
 	pcre *url;
 	pcre *html_title;
+	pcre *tweet;
 	pcre *command_eightball;
 	pcre *command_timer;
 	pcre *command_uptime;

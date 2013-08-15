@@ -8,7 +8,7 @@
 #include <string.h>
 #include <pcre.h>
 
-#define HTTP_BUFFER 10240 //10kb http buffer
+#define HTTP_BUFFER 1024000 //100kb http buffer
 
 char http_buffer[HTTP_BUFFER];
 size_t http_buffer_pos;
@@ -44,6 +44,20 @@ void strip_newlines(char *str)
 	for (unsigned int i=0; i<strlen(str); i++) if (str[i] == '\n') str[i] = ' ';
 }
 
+#warning FIXME
+void strip_html_tags(char *str)
+{
+	int deleting = 0;
+	int j=0;
+	for (unsigned int i=0; i < strlen(str); i++) {
+		if (str[i] == '<') deleting = 1;
+		str[j] = str[i];
+		if (!deleting) j++;
+		if (str[i] == '>') deleting = 0;
+	}
+	str[j] = '\0';
+}
+
 char *fetch_url_and_match(const char *url, const pcre *pattern)
 {
 	http_buffer_pos = 0;
@@ -67,7 +81,7 @@ char *fetch_url_and_match(const char *url, const pcre *pattern)
 	}
 
 	int res_buffers[30];
-	int resultcount = pcre_exec(patterns->html_title, 0, http_buffer, http_buffer_pos, 0, 0, res_buffers, 30);
+	int resultcount = pcre_exec(pattern, 0, http_buffer, http_buffer_pos, 0, 0, res_buffers, 30);
 	char *result = malloc(BUFFER_SIZE);
 	if (resultcount > 0) {
 		pcre_copy_substring(http_buffer, res_buffers, resultcount, 1, result, BUFFER_SIZE);
@@ -87,6 +101,18 @@ void get_title_from_url(struct recv_data *in, const char *url)
 	sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
 	irc_send_str(buf);
 	free(title);
+}
+
+void get_last_tweet_from_user(struct recv_data *in, const char *user)
+{
+	char url[strlen("https://twitter.com/") + strlen(user)];
+	sprintf(url, "https://twitter.com/%s", user);
+	char *tweet = fetch_url_and_match(url, patterns->tweet);
+	strip_html_tags(tweet);
+	char buf[strlen("PRIVMSG  :>> \n") + strlen(in->channel) + strlen(tweet)];
+	sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, tweet);
+	irc_send_str(buf);
+	free(tweet);
 }
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/

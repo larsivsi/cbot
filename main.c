@@ -79,9 +79,14 @@ void compile_patterns(struct patterns *patterns)
 		die("pcre compile command_say", 0);
 
 	// Twitter
-	pattern = "!twitter";
+	pattern = "!twitter (\\S+)";
 	if ((patterns->command_twitter = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile twitter", 0);
+
+	// Tweet in HTML
+	pattern = "<p class=\"js-tweet-text tweet-text\">(.+)</p>";
+	if ((patterns->tweet = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile tweet", 0);
 }
 
 void free_patterns(struct patterns *patterns)
@@ -91,6 +96,7 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->join);
 	pcre_free(patterns->url);
 	pcre_free(patterns->html_title);
+	pcre_free(patterns->tweet);
 	pcre_free(patterns->command_eightball);
 	pcre_free(patterns->command_timer);
 	pcre_free(patterns->command_uptime);

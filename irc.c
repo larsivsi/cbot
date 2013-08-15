@@ -3,7 +3,7 @@
 #include "config.h"
 #include "eightball.h"
 #include "log.h"
-#include "title.h"
+#include "web.h"
 #include "timer.h"
 
 #include <errno.h>
@@ -207,6 +207,15 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 1, time, 4);
 		int seconds = atoi(time)*60;
 		set_timer(in->nick, in->channel, seconds);
+	}
+
+	// Last tweet
+	offsetcount = pcre_exec(patterns->command_twitter, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount > 0) {
+		// We limit at 4 digits
+		char username[BUFFER_SIZE];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, username, BUFFER_SIZE);
+		get_last_tweet_from_user(in, username);
 	}
 
 	// Uptime
