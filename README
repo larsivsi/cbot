@@ -17,11 +17,10 @@ Features:
  * Auto op of joining users
  * Reload of everything (program code and config)
  * Magic git pull and rebuild
+ * Fetch last tweet from twitter user
 
 TODO:
- * More generic fetch-url-and-look-for-pattern
-  * Package tracking
-  * Fetch last tweet from twitter user
+ * Package tracking
  * Split lines from server (strtok on newlines)
 
 Authors:
