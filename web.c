@@ -1,4 +1,4 @@
-#include "title.h"
+#include "web.h"
 
 #include "common.h"
 #include "irc.h"
@@ -44,7 +44,7 @@ void strip_newlines(char *str)
 	for (unsigned int i=0; i<strlen(str); i++) if (str[i] == '\n') str[i] = ' ';
 }
 
-void get_title_from_url(struct recv_data *in, const char *url)
+char *fetch_url_and_match(const char *url, const pcre *pattern)
 {
 	http_buffer_pos = 0;
 
@@ -66,19 +66,27 @@ void get_title_from_url(struct recv_data *in, const char *url)
 			printf("CURL ERROR: %d (%s)\n", curl_err, err_buf);
 	}
 
-	int titles[30];
-	int titlecount = pcre_exec(patterns->html_title, 0, http_buffer, http_buffer_pos, 0, 0, titles, 30);
-	char title[BUFFER_SIZE];
-	if (titlecount > 0) {
-		pcre_copy_substring(http_buffer, titles, titlecount, 1, title, BUFFER_SIZE);
-		strip_newlines(title);
-		clean_spaces(title);
-		decode_html_entities_utf8(title, NULL);
-		char *buf = malloc(strlen(in->channel) + strlen(title) + 15);
-		sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
-		irc_send_str(buf);
-		free(buf);
+	int res_buffers[30];
+	int resultcount = pcre_exec(patterns->html_title, 0, http_buffer, http_buffer_pos, 0, 0, res_buffers, 30);
+	char *result = malloc(BUFFER_SIZE);
+	if (resultcount > 0) {
+		pcre_copy_substring(http_buffer, res_buffers, resultcount, 1, result, BUFFER_SIZE);
+		strip_newlines(result);
+		clean_spaces(result);
+		decode_html_entities_utf8(result, NULL);
+	} else {
+		result[0] = '\0'; // empty string
 	}
+	return result;
+}
+
+void get_title_from_url(struct recv_data *in, const char *url)
+{
+	char *title = fetch_url_and_match(url, patterns->html_title);
+	char buf[strlen(in->channel) + strlen(title) + 15];
+	sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
+	irc_send_str(buf);
+	free(title);
 }
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/

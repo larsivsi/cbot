@@ -3,7 +3,7 @@
 #include "config.h"
 #include "eightball.h"
 #include "log.h"
-#include "title.h"
+#include "web.h"
 #include "timer.h"
 #include "irc.h"
 
