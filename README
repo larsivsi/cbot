@@ -22,6 +22,7 @@ Features:
 TODO:
  * Package tracking
  * Split lines from server (strtok on newlines)
+ * List of OPs in database, !op command
 
 Authors:
  * Lars-Ivar Simonsen (larsivsi)
