@@ -80,9 +80,8 @@ char *fetch_url_and_match(const char *url, const pcre *pattern)
 		// Error 23 means that the HTTP_BUFFER is full, can be ignored
 		if (curl_err != 23) {
 			printf("CURL ERROR: %d (%s)\n", curl_err, err_buf);
-			char buf[strlen(ANGRY_ROBOT)];
-			strncpy(result, ANGRY_ROBOT, strlen(ANGRY_ROBOT));
-			return ANGRY_ROBOT;
+			strcpy(result, ANGRY_ROBOT);
+			return result;
 		}
 	}
 
