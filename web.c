@@ -58,12 +58,14 @@ void strip_html_tags(char *str)
 	str[j] = '\0';
 }
 
+#define ANGRY_ROBOT "\342\224\227\133\302\251\040\342\231\222\040\302\251\135\342\224\233\040\357\270\265\040\342\224\273\342\224\201\342\224\273"
 char *fetch_url_and_match(const char *url, const pcre *pattern)
 {
 	http_buffer_pos = 0;
 
 	int curl_err;
 	char err_buf[256];
+	char *result = malloc(BUFFER_SIZE);
 	CURL *curl_handle = curl_easy_init();
 	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, &http_write_callback);
@@ -76,13 +78,16 @@ char *fetch_url_and_match(const char *url, const pcre *pattern)
 
 	if (curl_err != 0) {
 		// Error 23 means that the HTTP_BUFFER is full, can be ignored
-		if (curl_err != 23)
+		if (curl_err != 23) {
 			printf("CURL ERROR: %d (%s)\n", curl_err, err_buf);
+			char buf[strlen(ANGRY_ROBOT)];
+			strncpy(result, ANGRY_ROBOT, strlen(ANGRY_ROBOT));
+			return ANGRY_ROBOT;
+		}
 	}
 
 	int res_buffers[30];
 	int resultcount = pcre_exec(pattern, 0, http_buffer, http_buffer_pos, 0, 0, res_buffers, 30);
-	char *result = malloc(BUFFER_SIZE);
 	if (resultcount > 0) {
 		pcre_copy_substring(http_buffer, res_buffers, resultcount, 1, result, BUFFER_SIZE);
 		strip_newlines(result);
