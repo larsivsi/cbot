@@ -281,7 +281,7 @@ int main(int argc, char **argv)
 				printf(" !!! Execvp failing, giving up...\n");
 				exit(-1);
 			} else if (strcmp(input, "upgrade\n") == 0) {
-				system("(git pull && make) &");
+				system("(git pull --ff-only && make) &");
 				printf(" >> Upgrading...\n");
 			} else if (strncmp(input, "say ", 4) == 0) {
 				int offsets[30];
