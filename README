@@ -23,6 +23,7 @@ TODO:
  * Package tracking
  * Split lines from server (strtok on newlines)
  * List of OPs in database, !op command
+ * Language recognition, automatic translation (using google translate)
 
 Authors:
  * Lars-Ivar Simonsen (larsivsi)
