@@ -311,7 +311,7 @@ int main(int argc, char **argv)
 			}
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';
-			printf("%s", buffer);
+			//printf("%s", buffer);
 			// Only handle privmsg
 			if (irc_parse_input(buffer, irc, patterns))
 				irc_handle_input(irc, patterns);

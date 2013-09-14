@@ -44,7 +44,6 @@ void strip_newlines(char *str)
 	for (unsigned int i=0; i<strlen(str); i++) if (str[i] == '\n') str[i] = ' ';
 }
 
-#warning FIXME
 void strip_html_tags(char *str)
 {
 	int deleting = 0;
@@ -101,9 +100,11 @@ char *fetch_url_and_match(const char *url, const pcre *pattern)
 void get_title_from_url(struct recv_data *in, const char *url)
 {
 	char *title = fetch_url_and_match(url, patterns->html_title);
-	char buf[strlen(in->channel) + strlen(title) + 15];
-	sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
-	irc_send_str(buf);
+	if (strcmp(title, "")) {
+		char buf[strlen(in->channel) + strlen(title) + 15];
+		sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
+		irc_send_str(buf);
+	}
 	free(title);
 }
 
