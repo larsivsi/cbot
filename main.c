@@ -6,6 +6,7 @@
 #include "web.h"
 #include "timer.h"
 #include "irc.h"
+#include "markov.h"
 
 #include <pcre.h>
 #include <errno.h>
@@ -133,6 +134,7 @@ void terminate()
 
 	log_terminate();
 	irc_terminate();
+	markov_terminate();
 	free_config();
 
 	curl_global_cleanup();
@@ -219,6 +221,9 @@ int main(int argc, char **argv)
 
 	// Set up db connection for logging
 	log_init();
+
+	// Parse markov corpus
+	markov_init(config->markovcorpus);
 
 	int recv_size;
 	char buffer[BUFFER_SIZE];

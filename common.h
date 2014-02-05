@@ -23,6 +23,8 @@ struct patterns {
 	pcre *twitter;
 };
 extern struct patterns *patterns;
+void clean_spaces(char *str);
+void strip_newlines(char *str);
 
 // Prototypes
 void die(const char *msg, const char *err);

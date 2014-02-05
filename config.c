@@ -22,6 +22,7 @@ void free_config()
 	free(config->db_connection_string);
 
 	free(config->ops);
+	free(config->markovcorpus);
 	free(config);
 }
 
@@ -62,6 +63,10 @@ void set_config_param(char *parameter, char *value) {
 	else if (!strcmp(parameter, "dbconnect")) {
 		config->db_connection_string = malloc(strlen(value) + 1);
 		strcpy(config->db_connection_string, value);
+	}
+	else if (!strcmp(parameter, "markovcorpus")) {
+		config->markovcorpus = malloc(strlen(value) + 1);
+		strcpy(config->markovcorpus, value);
 	}
 	else if (!strcmp(parameter, "ops")) {
 		int op_count = 1;

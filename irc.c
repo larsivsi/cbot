@@ -5,6 +5,7 @@
 #include "log.h"
 #include "web.h"
 #include "timer.h"
+#include "markov.h"
 
 #include <errno.h>
 #include <pcre.h>
@@ -178,6 +179,7 @@ void *send_loop(void *arg)
 void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 {
 	log_message(in);
+	markov_parse(in);
 
 	const char *msg = in->message;
 	int offsets[30];

@@ -41,7 +41,7 @@ void clean_spaces(char *str)
 
 void strip_newlines(char *str)
 {
-	for (unsigned int i=0; i<strlen(str); i++) if (str[i] == '\n') str[i] = ' ';
+	for (unsigned int i=0; i<strlen(str); i++) if (str[i] == '\n' || str[i] == '\r') str[i] = ' ';
 }
 
 void strip_html_tags(char *str)

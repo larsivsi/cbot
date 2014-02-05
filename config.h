@@ -11,6 +11,7 @@ struct config {
 	char **channels;
 	char *db_connection_string;
 	char **ops;
+	char *markovcorpus;
 };
 extern struct config *config;
 
