@@ -31,12 +31,13 @@ size_t http_write_callback(void *contents, size_t element_size, size_t num_eleme
 void clean_spaces(char *str)
 {
 	unsigned int i,j;
-	for (i=j=0; i<strlen(str) - 1; i++) {
-		str[j] = str[i];
-		if (str[i] != ' ' || str[i+1] != ' ')
+	for (i=j=0; i<strlen(str); i++) {
+		if (str[i] != ' ' || str[i+1] != ' ') {
+			str[j] = str[i];
 			j++;
+		}
 	}
-	str[++j] = 0; // null terminate
+	str[j] = 0; // null terminate
 }
 
 void strip_newlines(char *str)
