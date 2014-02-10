@@ -2,14 +2,15 @@
 #include "irc.h"
 
 #define _GNU_SOURCE 1
-#include <string.h> // memset
-#include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
+#include <malloc.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h> // memset
+#include <sys/stat.h>
 #include <time.h>
-#include <stdarg.h>
+#include <unistd.h>
 
 typedef struct hash_item {
 	int words_count;
@@ -24,6 +25,7 @@ typedef struct hash_item {
 } hash_item;
 
 hash_item hash_map[HASHTABLE_SIZE];
+int initialized = 0;
 
 // djb2
 unsigned long hash(const char *string)
@@ -82,7 +84,6 @@ void free_item(hash_item *item)
 	free(item->words);
 }
 
-
 void markov_terminate()
 {
 	initialized = 0;
@@ -99,7 +100,6 @@ void markov_terminate()
 	}
 }
 
-int initialized = 0;
 void markov_init(const char *corpus_file)
 {
 	FILE *file = fopen(corpus_file, "r");
@@ -207,8 +207,7 @@ void markov_parse(struct recv_data *in)
 	buf = add_word(buf, previous);
 	buf = add_word(buf, word);
 
-	int num = random() % 10;
-	while (/*++num < 30 &&*/ item && item->words_count) {
+	while (item && item->words_count) {
 		char *next_word = item->words[random() % item->words_count];
 		buf = add_word(buf, next_word);
 		if (next_word[strlen(next_word)-1] == '.') break;
