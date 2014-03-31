@@ -127,6 +127,12 @@ void markov_init(const char *corpus_file)
 	fclose(file);
 
 	text[length] = 0;
+	// Strip newlines
+	for (size_t i = 0; i < length; i++) {
+		if (text[i]=='\n') {
+			text[i]=' ';
+		}
+	}
 
 	srand(time(NULL));
 
