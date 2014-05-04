@@ -90,7 +90,7 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 2, in->user, 32);
 		pcre_copy_substring(msg, offsets, offsetcount, 3, in->server, 64);
 		pcre_copy_substring(msg, offsets, offsetcount, 4, in->channel, 32);
-		// User that got kicked
+		// Check if we got kicked
 		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, 32);
 		if (strcmp(in->message, config->nick) == 0) {
 			printf("Got kicked, rejoining\n");
@@ -98,6 +98,27 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 			sprintf(rejoin, "JOIN %s\n", in->channel);
 			irc_send_str(rejoin);
 		}
+
+		printf("full: %s, nick: %s, user: %s, server: %s, channel: %s, message: %s\n", msg, in->nick, in->user, in->server, in->channel, in->message);
+
+		/*/ FIXME: need to track nicks of our autoops
+		// Check if one of our autoops got kicked
+		int valid = 0;
+		int i=0;
+
+		while (config->ops[i]) {
+			if (!strcmp(config->ops[i++], identity)) {
+				valid = 1;
+				break;
+			}
+		}
+
+		if (valid) {
+			char buf[strlen("KICK  \n") + strlen(channel) + strlen(nick)];
+			sprintf(buf, "KICK %s +o %s\n", channel, nick);
+			irc_send_str(buf);
+		}*/
+
 		return 0;
 	}
 
