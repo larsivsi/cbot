@@ -220,10 +220,14 @@ int main(int argc, char **argv)
 	curl_global_init(CURL_GLOBAL_ALL);
 
 	// Set up db connection for logging
-	log_init();
+	if (config->enabled_modules & MODULE_LOG) {
+		log_init();
+	}
 
 	// Parse markov corpus
-	markov_init(config->markovcorpus);
+	if (config->enabled_modules & MODULE_MARKOV) {
+		markov_init(config->markovcorpus);
+	}
 
 	int recv_size;
 	char buffer[BUFFER_SIZE];

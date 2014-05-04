@@ -123,7 +123,7 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 
 		if (valid) {
 			char buf[strlen("MODE  +o \n") + strlen(channel) + strlen(nick)];
-			sprintf(buf, "MODE %s +o %s\n", channel, nick); 
+			sprintf(buf, "MODE %s +o %s\n", channel, nick);
 			irc_send_str(buf);
 		}
 	}
@@ -178,50 +178,65 @@ void *send_loop(void *arg)
 
 void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 {
-	log_message(in);
-	markov_parse(in);
+	if (config->enabled_modules & MODULE_LOG) {
+		log_message(in);
+	}
+
+	if (config->enabled_modules & MODULE_MARKOV) {
+		markov_parse(in);
+	}
 
 	const char *msg = in->message;
 	int offsets[30];
 	// Check URLs
-	int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	while (offsetcount > 0) {
-		char url[BUFFER_SIZE];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER_SIZE);
-		get_title_from_url(in, url);
-		log_url(in, url);
-		offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), offsets[1], 0, offsets, 30);
+	if (config->enabled_modules & MODULE_URLS) {
+		int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
+		while (offsetcount > 0) {
+			char url[BUFFER_SIZE];
+			pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER_SIZE);
+			get_title_from_url(in, url);
+			if (config->enabled_modules & MODULE_LOG) {
+				log_url(in, url);
+			}
+			offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), offsets[1], 0, offsets, 30);
+		}
 	}
 
 	// 8ball
-	offsetcount = pcre_exec(patterns->command_eightball, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	if (offsetcount > 0) {
-		char arguments[BUFFER_SIZE];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, arguments, BUFFER_SIZE);
-		eightball(in, arguments);
+	if (config->enabled_modules & MODULE_EIGHTBALL) {
+		int offsetcount = pcre_exec(patterns->command_eightball, 0, msg, strlen(msg), 0, 0, offsets, 30);
+		if (offsetcount > 0) {
+			char arguments[BUFFER_SIZE];
+			pcre_copy_substring(msg, offsets, offsetcount, 1, arguments, BUFFER_SIZE);
+			eightball(in, arguments);
+		}
 	}
 
 	// Timer
-	offsetcount = pcre_exec(patterns->command_timer, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	if (offsetcount > 0) {
-		// We limit at 4 digits
-		char time[4];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, time, 4);
-		int seconds = atoi(time)*60;
-		set_timer(in->nick, in->channel, seconds);
+	if (config->enabled_modules & MODULE_TIMER) {
+		int offsetcount = pcre_exec(patterns->command_timer, 0, msg, strlen(msg), 0, 0, offsets, 30);
+		if (offsetcount > 0) {
+			// We limit at 4 digits
+			char time[4];
+			pcre_copy_substring(msg, offsets, offsetcount, 1, time, 4);
+			int seconds = atoi(time)*60;
+			set_timer(in->nick, in->channel, seconds);
+		}
 	}
 
 	// Last tweet
-	offsetcount = pcre_exec(patterns->command_twitter, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	if (offsetcount > 0) {
-		// We limit at 4 digits
-		char username[BUFFER_SIZE];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, username, BUFFER_SIZE);
-		get_last_tweet_from_user(in, username);
+	if (config->enabled_modules & MODULE_TIMER) {
+		int offsetcount = pcre_exec(patterns->command_twitter, 0, msg, strlen(msg), 0, 0, offsets, 30);
+		if (offsetcount > 0) {
+			// We limit at 4 digits
+			char username[BUFFER_SIZE];
+			pcre_copy_substring(msg, offsets, offsetcount, 1, username, BUFFER_SIZE);
+			get_last_tweet_from_user(in, username);
+		}
 	}
 
 	// Uptime
-	offsetcount = pcre_exec(patterns->command_uptime, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	int offsetcount = pcre_exec(patterns->command_uptime, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount > 0) {
 		long elapsed_secs = toc() / 1000000;
 		char *buf = (char*)malloc(BUFFER_SIZE);

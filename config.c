@@ -84,6 +84,34 @@ void set_config_param(char *parameter, char *value) {
 			op = strtok(NULL, ",");
 		}
 	}
+	else if (!strcmp(parameter, "modules")) {
+		config->enabled_modules = 0;
+		char *module = strtok(value, ",");
+		while (module != NULL) {
+			if (!strcmp(module, "eightball")) {
+				config->enabled_modules |= MODULE_EIGHTBALL;
+			}
+			else if (!strcmp(module, "urls")) {
+				config->enabled_modules |= MODULE_URLS;
+			}
+			else if (!strcmp(module, "timer")) {
+				config->enabled_modules |= MODULE_TIMER;
+			}
+			else if (!strcmp(module, "twitter")) {
+				config->enabled_modules |= MODULE_TWITTER;
+			}
+			else if (!strcmp(module, "markov")) {
+				config->enabled_modules |= MODULE_MARKOV;
+			}
+			else if (!strcmp(module, "autoop")) {
+				config->enabled_modules |= MODULE_AUTOOP;
+			}
+			else if (!strcmp(module, "log")) {
+				config->enabled_modules |= MODULE_LOG;
+			}
+			module = strtok(NULL, ",");
+		}
+	}
 	else {
 		printf("WARNING: Unknown config parameter \'%s\' with value \'%s\'!\n", parameter, value);
 	}
