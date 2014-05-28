@@ -20,6 +20,7 @@ struct patterns {
 	pcre *command_uptime;
 	pcre *command_say;
 	pcre *command_twitter;
+	pcre *command_kick;
 	pcre *twitter;
 };
 extern struct patterns *patterns;

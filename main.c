@@ -49,7 +49,7 @@ void compile_patterns(struct patterns *patterns)
 
 	// Urls
 	//    pattern = "\\b((?:(?:([a-z][\\w\\.-]+:/{1,3})|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|\\}\\]|[^\\s`!()\\[\\]{};:'\".,<>?])|[a-z0-9.\\-+_]+@[a-z0-9.\\-]+[.][a-z]{1,5}[^\\s/`!()\\[\\]{};:'\".,<>?]))";
-	pattern = "(http:\\/\\/\\S+)";
+	pattern = "(https?:\\/\\/\\S+)";
 	if ((patterns->url = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile url", 0);
 
@@ -78,6 +78,11 @@ void compile_patterns(struct patterns *patterns)
 	pattern = "say (\\S+) (.*)$";
 	if ((patterns->command_say = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile command_say", 0);
+
+	// kick command for the console
+	pattern = "kick (\\S+) (.+)$";
+	if ((patterns->command_kick = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile command_kick", 0);
 
 	// Twitter
 	pattern = "!twitter (\\S+)";
@@ -304,6 +309,18 @@ int main(int argc, char **argv)
 					sprintf(sendbuf, "PRIVMSG %s :%s\n", channel, message);
 					irc_send_str(sendbuf);
 				}
+			} else if (strncmp(input, "kick ", 5) == 0) {
+				int offsets[30];
+				int offsetcount = pcre_exec(patterns->command_kick, 0, input, strlen(input), 0, 0, offsets, 30);
+				if (offsetcount > 0) {
+					char channel[BUFFER_SIZE];
+					char user[BUFFER_SIZE];
+					pcre_copy_substring(input, offsets, offsetcount, 1, channel, BUFFER_SIZE);
+					pcre_copy_substring(input, offsets, offsetcount, 2, user, BUFFER_SIZE);
+					char sendbuf[strlen("KICK   :Gene police! You! Out of the pool, now!\n") + strlen(channel) + strlen(user)];
+					sprintf(sendbuf, "KICK %s %s :Gene police! You! Out of the pool, now!\n", channel, user);
+					irc_send_str(sendbuf);
+				}
 			} else {
 				printf(" >> Unrecognized command. Try 'quit'\n");
 			}
@@ -320,7 +337,6 @@ int main(int argc, char **argv)
 			}
 			// Add \0 to terminate string
 			buffer[recv_size] = '\0';
-			//printf("%s", buffer);
 			// Only handle privmsg
 			if (irc_parse_input(buffer, irc, patterns))
 				irc_handle_input(irc, patterns);
