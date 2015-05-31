@@ -97,17 +97,20 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 			char rejoin[40];
 			sprintf(rejoin, "JOIN %s\n", in->channel);
 			irc_send_str(rejoin);
+			return 0;
 		}
 
 		printf("full: %s, nick: %s, user: %s, server: %s, channel: %s, message: %s\n", msg, in->nick, in->user, in->server, in->channel, in->message);
-		return 0;
 
 		// Check if one of our autoops got kicked
+		char *identity = log_get_identity(in->message);
+		if (!identity) {
+			printf(" >>> unable to find identity for kickee\n");
+			return 0;
+		}
+
 		int valid = 0;
 		int i=0;
-		char *identity = log_get_identity(in->message);
-		printf("ident: %s\n", identity);
-
 		while (config->ops[i]) {
 			if (!strcmp(config->ops[i++], identity)) {
 				valid = 1;
