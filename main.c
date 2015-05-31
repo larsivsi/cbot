@@ -234,10 +234,6 @@ int main(int argc, char **argv)
 		markov_init(config->markovcorpus);
 	}
 
-	int recv_size;
-	char buffer[BUFFER_SIZE];
-	char input[BUFFER_SIZE];
-
 	irc_init();
 
 	if (socket_fd == -1) {
@@ -260,6 +256,12 @@ int main(int argc, char **argv)
 	FD_SET(STDIN_FILENO, &socket_set);
 	FD_SET(socket_fd, &socket_set);
 
+
+	int recv_size;
+	char buffer[BUFFER_SIZE];
+	char input[BUFFER_SIZE];
+	memset(buffer, 0, BUFFER_SIZE);
+	size_t buffer_length = 0;
 	while (1) {
 		int ret = select(socket_fd+1, &socket_set, 0, 0, 0);
 		if (ret == -1) {
@@ -325,9 +327,16 @@ int main(int argc, char **argv)
 				printf(" >> Unrecognized command. Try 'quit'\n");
 			}
 			FD_SET(socket_fd, &socket_set);
-		}
-		else {
-			recv_size = recv(socket_fd, buffer, BUFFER_SIZE-1, 0);
+		} else {
+			if (buffer_length > BUFFER_SIZE - 1) {
+				printf("what the fuck, IRCd, a line longer than 4k? ignoring that line");
+				memset(buffer, 0, BUFFER_SIZE);
+				buffer_length = 0;
+				continue;
+			}
+
+			recv_size = recv(socket_fd, buffer + buffer_length, BUFFER_SIZE-1, 0);
+			buffer_length += recv_size;
 			if (recv_size == 0) {
 				printf(" >> recv_size is 0, assuming closed remote socket, reconnecting\n");
 				close(socket_fd);
@@ -335,11 +344,23 @@ int main(int argc, char **argv)
 				net_connect();
 				printf("reconnected\n");
 			}
-			// Add \0 to terminate string
-			buffer[recv_size] = '\0';
-			// Only handle privmsg
-			if (irc_parse_input(buffer, irc, patterns))
-				irc_handle_input(irc, patterns);
+			char *newlinepos = 0;
+			char *bufbegin = buffer;
+			printf("reading out lines\n");
+			while ((newlinepos = strchr(bufbegin, '\n'))) {
+				*newlinepos = 0;
+				printf("\nBUF\n%s\nENDBUF\n", bufbegin);
+				// Only handle privmsg
+				if (irc_parse_input(buffer, irc, patterns)) {
+					irc_handle_input(irc, patterns);
+				}
+				bufbegin = newlinepos + 1;
+			}
+			size_t bytes_removed = bufbegin - buffer;
+			memmove(buffer, bufbegin, buffer_length - bytes_removed);
+			buffer_length -= bytes_removed;
+			memset(buffer + buffer_length, 0, BUFFER_SIZE - buffer_length);
+
 			FD_SET(STDIN_FILENO, &socket_set);
 		}
 	}
