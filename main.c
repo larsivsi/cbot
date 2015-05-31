@@ -107,6 +107,7 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->command_timer);
 	pcre_free(patterns->command_uptime);
 	pcre_free(patterns->command_say);
+	pcre_free(patterns->command_kick);
 	pcre_free(patterns->command_twitter);
 }
 
@@ -328,14 +329,14 @@ int main(int argc, char **argv)
 			}
 			FD_SET(socket_fd, &socket_set);
 		} else {
-			if (buffer_length > BUFFER_SIZE - 1) {
-				printf("what the fuck, IRCd, a line longer than 4k? ignoring that line");
+			if (buffer_length >= BUFFER_SIZE - 1) {
+				printf(" >> what the fuck, IRCd, a line longer than 4k? dropping some buffer\n");
 				memset(buffer, 0, BUFFER_SIZE);
 				buffer_length = 0;
 				continue;
 			}
 
-			recv_size = recv(socket_fd, buffer + buffer_length, BUFFER_SIZE-1, 0);
+			recv_size = recv(socket_fd, buffer + buffer_length, BUFFER_SIZE - buffer_length - 1, 0);
 			buffer_length += recv_size;
 			if (recv_size == 0) {
 				printf(" >> recv_size is 0, assuming closed remote socket, reconnecting\n");
@@ -346,10 +347,8 @@ int main(int argc, char **argv)
 			}
 			char *newlinepos = 0;
 			char *bufbegin = buffer;
-			printf("reading out lines\n");
 			while ((newlinepos = strchr(bufbegin, '\n'))) {
 				*newlinepos = 0;
-				printf("\nBUF\n%s\nENDBUF\n", bufbegin);
 				// Only handle privmsg
 				if (irc_parse_input(buffer, irc, patterns)) {
 					irc_handle_input(irc, patterns);
