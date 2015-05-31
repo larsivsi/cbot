@@ -100,11 +100,13 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		}
 
 		printf("full: %s, nick: %s, user: %s, server: %s, channel: %s, message: %s\n", msg, in->nick, in->user, in->server, in->channel, in->message);
+		return 0;
 
-		/*/ FIXME: need to track nicks of our autoops
 		// Check if one of our autoops got kicked
 		int valid = 0;
 		int i=0;
+		char *identity = log_get_identity(in->message);
+		printf("ident: %s\n", identity);
 
 		while (config->ops[i]) {
 			if (!strcmp(config->ops[i++], identity)) {
@@ -112,12 +114,13 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 				break;
 			}
 		}
+		free(identity);
 
 		if (valid) {
-			char buf[strlen("KICK  \n") + strlen(channel) + strlen(nick)];
-			sprintf(buf, "KICK %s +o %s\n", channel, nick);
-			irc_send_str(buf);
-		}*/
+			char sendbuf[strlen("KICK   :Gene police! You! Out of the pool, now!\n") + strlen(in->channel) + strlen(in->nick)];
+			sprintf(sendbuf, "KICK %s %s :Gene police! You! Out of the pool, now!\n", in->channel, in->nick);
+			irc_send_str(sendbuf);
+		}
 
 		return 0;
 	}

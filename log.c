@@ -5,8 +5,8 @@
 #include "irc.h"
 
 #include <libpq-fe.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 PGconn *connection = 0;
 
@@ -37,7 +37,7 @@ void log_init()
 	}
 	PQclear(result);
 
-	result = PQprepare(connection, "update_nick", "UPDATE nicks SET updated_at=NOW(), words=words+$1 WHERE nick=$2", 0, 0);
+	result = PQprepare(connection, "update_nick", "UPDATE nicks SET updated_at=NOW(), words=words+$1, identity = $3 WHERE nick=$2", 0, 0);
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
 		PQclear(result);
 		printf(" ! Unable to create prepared function (update_nick)!\n");
@@ -50,6 +50,15 @@ void log_init()
 	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
 		PQclear(result);
 		printf(" ! Unable to create prepared function (get_nick_id)!\n");
+		log_abort();
+		return;
+	}
+	PQclear(result);
+
+	result = PQprepare(connection, "get_nick_identity", "SELECT identity FROM nicks WHERE nick=$1", 0, 0);
+	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
+		printf(" ! Unable to create prepared function (get_nick_identity)!\n");
 		log_abort();
 		return;
 	}
@@ -131,7 +140,7 @@ void log_message(struct recv_data *in)
 	if (connection == 0) return;
 	if (strcmp(in->nick, "") == 0) return;
 
-	const char *parameters[2];
+	const char *parameters[3];
 	PGresult *nickResult, *logResult, *wordResult;
 
 	parameters[0] = in->nick;
@@ -157,11 +166,18 @@ void log_message(struct recv_data *in)
 		return;
 	}
 
+	// Update nick info
 	char *numwords_buf = malloc(sizeof(int)*8+1);
 	sprintf(numwords_buf, "%d", count_words(in->message));
 	parameters[0] = numwords_buf;
+
 	parameters[1] = in->nick;
-	wordResult = PQexecPrepared(connection, "update_nick", 2, parameters, 0, 0, 0);
+
+	char identity[strlen("@") + strlen(in->nick) + strlen(in->user) + strlen(in->server)];
+	sprintf(identity, "%s@%s", in->user, in->server);
+	parameters[2] = identity;
+
+	wordResult = PQexecPrepared(connection, "update_nick", 3, parameters, 0, 0, 0);
 	if (PQresultStatus(wordResult) != PGRES_COMMAND_OK) {
 		printf(" ! Unable to log message in database (%s)!\n", PQerrorMessage(connection));
 		return;
@@ -240,6 +256,31 @@ void log_eightball(const char *nick, const char *query, const char *answer)
 	}
 
 	PQclear(logresult);
+}
+
+char *log_get_identity(const char *nick)
+{
+	PGresult *result;
+
+	const char *parameters[1];
+	parameters[0] = nick;
+	result = PQexecPrepared(connection, "get_nick_identity", 1, parameters, 0, 0, 0);
+	if (PQresultStatus(result) != PGRES_TUPLES_OK || PQntuples(result) == 0) {
+		printf(" ! Unable to get identity from database!\n");
+		return 0;
+	}
+
+	char *identity = PQgetvalue(result, 0, 0);
+	if (strcmp(identity, "") == 0) {
+		identity = 0;
+	} else {
+		// original return value cleared when we run PQclear, so we copy
+		char *buffer = malloc(strlen(identity));
+		strcpy(buffer, identity);
+		identity = buffer;
+	}
+	PQclear(result);
+	return identity;
 }
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/

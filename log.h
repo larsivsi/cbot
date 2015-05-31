@@ -8,6 +8,7 @@ void log_message(struct recv_data *in);
 void log_url(struct recv_data *in, const char *url);
 void log_eightball(const char *nick, const char *query, const char *answer);
 void log_terminate();
+char *log_get_identity(const char *nick);
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
 #endif//LOG_H
