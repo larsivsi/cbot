@@ -111,6 +111,24 @@ void log_init()
 	}
 	PQclear(result);
 
+	result = PQprepare(connection, "check_op", "SELECT COUNT(*) FROM operators WHERE ident = $1 AND channel = $2", 0, 0);
+	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
+		printf(" ! Unable to create prepared function (check_op)!\n");
+		log_abort();
+		return;
+	}
+	PQclear(result);
+
+	result = PQprepare(connection, "add_op", "INSERT INTO operators(ident, channel) VALUES($1, $2)", 0, 0);
+	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+		PQclear(result);
+		printf(" ! Unable to create prepared function (add_op)!\n");
+		log_abort();
+		return;
+	}
+	PQclear(result);
+
 	printf(":: Database connected, logging enabled!\n");
 }
 
@@ -279,6 +297,44 @@ char *log_get_identity(const char *nick)
 	}
 	PQclear(result);
 	return identity;
+}
+
+void db_user_add_op(const char *nick, const char *channel)
+{
+	char *ident = log_get_identity(nick);
+	if (!ident) {
+		printf(" ! Unable to get identity of nick %s\n", nick);
+		return;
+	}
+
+	const char *parameters[2];
+	parameters[0] = ident;
+	parameters[1] = channel;
+
+	PGresult *addresult = PQexecPrepared(connection, "add_op", 2, parameters, 0, 0, 0);
+	if (PQresultStatus(addresult) != PGRES_COMMAND_OK) {
+		printf(" ! Unable to add operator to database!\n");
+	}
+
+	PQclear(addresult);
+}
+
+int db_user_is_op(const char *ident, const char *channel)
+{
+	PGresult *result;
+
+	const char *parameters[2];
+	parameters[0] = ident;
+	parameters[1] = channel;
+	result = PQexecPrepared(connection, "check_op", 2, parameters, 0, 0, 0);
+	if (PQresultStatus(result) != PGRES_TUPLES_OK || PQntuples(result) == 0) {
+		printf(" ! Unable to check if user %s is op in db: %s\n", ident, PQerrorMessage(connection));
+		return 0;
+	}
+
+	int count = atoi(PQgetvalue(result, 0, 0));
+	PQclear(result);
+	return count;
 }
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/

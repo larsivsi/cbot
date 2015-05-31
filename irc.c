@@ -82,7 +82,6 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 			strcpy(in->channel, in->nick);
 			printf("%s : %s \n", in->channel, in->nick);
 		}*/
-		printf("ident: %s\n", in->ident);
 		return 1;
 	}
 	// Kick
@@ -157,17 +156,7 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 2, identity, BUFFER_SIZE);
 		pcre_copy_substring(msg, offsets, offsetcount, 3, channel, BUFFER_SIZE);
 
-		int valid = 0;
-		int i=0;
-
-		while (config->ops[i]) {
-			if (!strcmp(config->ops[i++], identity)) {
-				valid = 1;
-				break;
-			}
-		}
-
-		if (valid) {
+		if (db_user_is_op(identity, channel)) {
 			char buf[strlen("MODE  +o \n") + strlen(channel) + strlen(nick)];
 			sprintf(buf, "MODE %s +o %s\n", channel, nick);
 			irc_send_str(buf);
@@ -274,7 +263,6 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 	if (config->enabled_modules & MODULE_TIMER) {
 		int offsetcount = pcre_exec(patterns->command_twitter, 0, msg, strlen(msg), 0, 0, offsets, 30);
 		if (offsetcount > 0) {
-			// We limit at 4 digits
 			char username[BUFFER_SIZE];
 			pcre_copy_substring(msg, offsets, offsetcount, 1, username, BUFFER_SIZE);
 			get_last_tweet_from_user(in, username);
@@ -295,6 +283,17 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 		free(stf);
 	}
 
+	// Give operator status
+	offsetcount = pcre_exec(patterns->command_op, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount == 2 && db_user_is_op(in->ident, in->channel)) {
+		char nick[BUFFER_SIZE];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, nick, BUFFER_SIZE);
+		db_user_add_op(nick, in->channel);
+
+		char buf[BUFFER_SIZE];
+		sprintf(buf, "MODE %s +o %s\n", in->channel, nick);
+		irc_send_str(buf);
+	}
 }
 
 

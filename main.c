@@ -74,6 +74,11 @@ void compile_patterns(struct patterns *patterns)
 	if ((patterns->command_uptime = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile uptime", 0);
 
+	// Give operator status
+	pattern = "!op (\\S+)";
+	if ((patterns->command_op = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile op", 0);
+
 	// Say command for the console
 	pattern = "say (\\S+) (.*)$";
 	if ((patterns->command_say = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
@@ -108,6 +113,7 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->command_uptime);
 	pcre_free(patterns->command_say);
 	pcre_free(patterns->command_kick);
+	pcre_free(patterns->command_op);
 	pcre_free(patterns->command_twitter);
 }
 
@@ -350,7 +356,7 @@ int main(int argc, char **argv)
 			while ((newlinepos = strchr(bufbegin, '\n'))) {
 				*newlinepos = 0;
 				// Only handle privmsg
-				if (irc_parse_input(buffer, irc, patterns)) {
+				if (irc_parse_input(bufbegin, irc, patterns)) {
 					irc_handle_input(irc, patterns);
 				}
 				bufbegin = newlinepos + 1;
