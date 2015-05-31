@@ -185,13 +185,22 @@ char *add_word(char *string, const char *word)
 	return string;
 }
 
+#define TRIGGER "!apropos "
+
 void markov_parse(struct recv_data *in)
 {
 	if (!initialized) {
 		return;
 	}
 
-	char *input = strdup(in->message);
+	if (strncmp(in->message, TRIGGER, strlen(TRIGGER)) != 0) {
+		return;
+	}
+	if (strlen(in->message) < strlen(TRIGGER) + 5) {
+		return;
+	}
+
+	char *input = strdup(in->message + strlen(TRIGGER));
 	strip_newlines(input);
 	char *previous = strtok(input, " ");
 	strip_newlines(previous);
