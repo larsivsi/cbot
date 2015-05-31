@@ -179,7 +179,6 @@ void *send_loop(void *arg)
 void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 {
 	log_message(in);
-	markov_parse(in);
 
 	const char *msg = in->message;
 	int offsets[30];
@@ -232,6 +231,15 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 		irc_send_str(buf);
 		free(buf);
 		free(stf);
+	}
+
+	// Last tweet
+	offsetcount = pcre_exec(patterns->command_markov, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	if (offsetcount > 0) {
+		// We limit at 4 digits
+		char string[BUFFER_SIZE];
+		pcre_copy_substring(msg, offsets, offsetcount, 1, string, BUFFER_SIZE);
+		markov_parse(string, in);
 	}
 
 }

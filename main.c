@@ -88,6 +88,12 @@ void compile_patterns(struct patterns *patterns)
 	pattern = "<p class=\"js-tweet-text tweet-text\">(.+)</p>";
 	if ((patterns->tweet = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
 		die("pcre compile tweet", 0);
+
+	// Twitter
+	pattern = "!apropos (\\S+ \\S+)";
+	if ((patterns->command_markov = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
+		die("pcre compile markov", 0);
+
 }
 
 void free_patterns(struct patterns *patterns)
@@ -103,6 +109,7 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->command_uptime);
 	pcre_free(patterns->command_say);
 	pcre_free(patterns->command_twitter);
+	pcre_free(patterns->command_markov);
 }
 
 void die(const char *msg, const char *error)

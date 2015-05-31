@@ -21,6 +21,7 @@ struct patterns {
 	pcre *command_say;
 	pcre *command_twitter;
 	pcre *twitter;
+	pcre *command_markov;
 };
 extern struct patterns *patterns;
 void clean_spaces(char *str);

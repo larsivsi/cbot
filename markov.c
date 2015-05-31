@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdarg.h>
+#include <malloc.h>
 
 typedef struct hash_item {
 	int words_count;
@@ -83,6 +84,7 @@ void free_item(hash_item *item)
 }
 
 
+int initialized = 0;
 void markov_terminate()
 {
 	initialized = 0;
@@ -99,7 +101,6 @@ void markov_terminate()
 	}
 }
 
-int initialized = 0;
 void markov_init(const char *corpus_file)
 {
 	FILE *file = fopen(corpus_file, "r");
@@ -179,13 +180,13 @@ char *add_word(char *string, const char *word)
 	return string;
 }
 
-void markov_parse(struct recv_data *in)
+void markov_parse(const char *string, struct recv_data *in)
 {
 	if (!initialized) {
 		return;
 	}
 
-	char *input = strdup(in->message);
+	char *input = strdup(string);
 	strip_newlines(input);
 	char *previous = strtok(input, " ");
 	strip_newlines(previous);
@@ -211,11 +212,8 @@ void markov_parse(struct recv_data *in)
 	while (/*++num < 30 &&*/ item && item->words_count) {
 		char *next_word = item->words[random() % item->words_count];
 		buf = add_word(buf, next_word);
-		if (next_word[strlen(next_word)-1] == '.') break;
-		if (next_word[strlen(next_word)-1] == '\n') break;
-		if (next_word[strlen(next_word)-1] == '\r') break;
-		if (next_word[strlen(next_word)-1] == ',') break;
-		if (next_word[strlen(next_word)-1] == '!') break;
+		const lastchar = next_word[strlen(next_word)-1];
+		if (lastchar == '.' || lastchar == '\n' || lastchar == '\r' || lastchar == '!' || lastchar == '?') break;
 		item = get_item(hash_map, word, next_word, 0);
 		previous = word;
 		word = next_word;
