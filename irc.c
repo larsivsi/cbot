@@ -118,12 +118,29 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 			}
 		}
 		free(identity);
-
-		if (valid) {
-			char sendbuf[strlen("KICK   :Gene police! You! Out of the pool, now!\n") + strlen(in->channel) + strlen(in->nick)];
-			sprintf(sendbuf, "KICK %s %s :Gene police! You! Out of the pool, now!\n", in->channel, in->nick);
-			irc_send_str(sendbuf);
+		if (!valid) {
+			// we didn't care about that guy
+			return 0;
 		}
+
+		// make sure we don't kick one of our own
+		identity = log_get_identity(in->nick);
+		i = 0;
+		while (config->ops[i]) {
+			if (!strcmp(config->ops[i++], identity)) {
+				valid = 0;
+				break;
+			}
+		}
+		if (!valid) {
+			printf(" >>> infighting between our users, let's not meddle\n");
+			return 0;
+		}
+
+
+		char sendbuf[strlen("KICK   :Gene police! You! Out of the pool, now!\n") + strlen(in->channel) + strlen(in->nick)];
+		sprintf(sendbuf, "KICK %s %s :Gene police! You! Out of the pool, now!\n", in->channel, in->nick);
+		irc_send_str(sendbuf);
 
 		return 0;
 	}
