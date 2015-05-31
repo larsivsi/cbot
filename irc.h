@@ -5,6 +5,7 @@
 
 struct recv_data {
 	char nick[32];
+	char ident[256];
 	char user[32];
 	char server[64];
 	char channel[32];

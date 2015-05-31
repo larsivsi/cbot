@@ -32,7 +32,7 @@ void compile_patterns(struct patterns *patterns)
 	int pcre_err_off;
 
 	// Privmsg
-	char *pattern = ":([^!]+)!([^@]+)@(\\S+)\\sPRIVMSG\\s(\\S+)\\s:([^\\b]+)";
+	char *pattern = ":([^!]+)!(([^@]+)@(\\S+))\\sPRIVMSG\\s(\\S+)\\s:([^\\b]+)";
 	if ((patterns->privmsg = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
 		die("pcre compile privmsg", 0);
 

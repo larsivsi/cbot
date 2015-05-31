@@ -69,18 +69,20 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	//TODO: check 30
 	int offsets[30];
 	int offsetcount = pcre_exec(patterns->privmsg, 0, msg, strlen(msg), 0, 0, offsets, 30);
-	if (offsetcount == 6) {
+	if (offsetcount == 7) {
 		pcre_copy_substring(msg, offsets, offsetcount, 1, in->nick, 32);
-		pcre_copy_substring(msg, offsets, offsetcount, 2, in->user, 32);
-		pcre_copy_substring(msg, offsets, offsetcount, 3, in->server, 64);
-		pcre_copy_substring(msg, offsets, offsetcount, 4, in->channel, 32);
-		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, BUFFER_SIZE);
+		pcre_copy_substring(msg, offsets, offsetcount, 2, in->ident, 256);
+		pcre_copy_substring(msg, offsets, offsetcount, 3, in->user, 32);
+		pcre_copy_substring(msg, offsets, offsetcount, 4, in->server, 64);
+		pcre_copy_substring(msg, offsets, offsetcount, 5, in->channel, 32);
+		pcre_copy_substring(msg, offsets, offsetcount, 6, in->message, BUFFER_SIZE);
 		// In case of privmsgs ### fuck privmsgs for now -- sandsmark
 /*		if (strcmp(in->channel, config->nick) == 0) {
 			printf("%s : %s \n", in->channel, in->nick);
 			strcpy(in->channel, in->nick);
 			printf("%s : %s \n", in->channel, in->nick);
 		}*/
+		printf("ident: %s\n", in->ident);
 		return 1;
 	}
 	// Kick
@@ -124,7 +126,7 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		}
 
 		// make sure we don't kick one of our own
-		identity = log_get_identity(in->nick);
+		identity = log_get_identity(in->ident);
 		i = 0;
 		while (config->ops[i]) {
 			if (!strcmp(config->ops[i++], identity)) {

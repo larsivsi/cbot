@@ -173,9 +173,7 @@ void log_message(struct recv_data *in)
 
 	parameters[1] = in->nick;
 
-	char identity[strlen("@") + strlen(in->nick) + strlen(in->user) + strlen(in->server)];
-	sprintf(identity, "%s@%s", in->user, in->server);
-	parameters[2] = identity;
+	parameters[2] = in->ident;
 
 	wordResult = PQexecPrepared(connection, "update_nick", 3, parameters, 0, 0, 0);
 	if (PQresultStatus(wordResult) != PGRES_COMMAND_OK) {
