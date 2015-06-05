@@ -55,8 +55,6 @@ void compile_patterns(struct patterns *patterns)
 	patterns->html_title = regcomp("<title>([^<]+)<\\/title>");
 	// Eightball
 	patterns->command_eightball = regcomp("!8ball ([^$]+)");
-	// Timer
-	patterns->command_timer = regcomp("!timer (.+)$");
 	// Uptime
 	patterns->command_uptime = regcomp("!uptime");
 	// Give operator status
@@ -69,6 +67,18 @@ void compile_patterns(struct patterns *patterns)
 	patterns->command_twitter = regcomp("!twitter (\\S+)");
 	// Tweet in HTML
 	patterns->tweet = regcomp("<p class=\"js-tweet-text tweet-text\">(.+)</p>");
+
+	// Timer
+	patterns->command_timer = regcomp("!timer (.+)");
+	// time patterns
+	// {1w,1d,1h,1m,1s} message
+	patterns->time_offset = regcomp("(\\d{1,4}) ?(w|d|h|m|s) (\\S+)");
+	// hh:mm message
+	patterns->time_hourminute = regcomp("(\\d\\d?):(\\d\\d?) (\\S+)");
+	// dd/mm-hh:mm message
+	patterns->time_timedate = regcomp("(\\d\\d?)/(\\d\\d?)-(\\d\\d?):(\\d\\d?) (\\S+)");
+	// day-hh:mm message
+	patterns->time_daytime = regcomp("(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)-(\\d\\d?):(\\d\\d?) (\\S+)");
 }
 
 void free_patterns(struct patterns *patterns)
@@ -80,12 +90,16 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->html_title);
 	pcre_free(patterns->tweet);
 	pcre_free(patterns->command_eightball);
-	pcre_free(patterns->command_timer);
 	pcre_free(patterns->command_uptime);
 	pcre_free(patterns->command_say);
 	pcre_free(patterns->command_kick);
 	pcre_free(patterns->command_op);
 	pcre_free(patterns->command_twitter);
+	pcre_free(patterns->command_timer);
+	pcre_free(patterns->time_offset);
+	pcre_free(patterns->time_hourminute);
+	pcre_free(patterns->time_timedate);
+	pcre_free(patterns->time_daytime);
 }
 
 void die(const char *msg, const char *error)

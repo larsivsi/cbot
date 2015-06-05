@@ -14,15 +14,22 @@ struct patterns {
 	pcre *kick;
 	pcre *url;
 	pcre *html_title;
-	pcre *tweet;
+
 	pcre *command_eightball;
-	pcre *command_timer;
 	pcre *command_uptime;
 	pcre *command_say;
 	pcre *command_twitter;
 	pcre *command_kick;
 	pcre *command_op;
+
 	pcre *twitter;
+	pcre *tweet;
+
+	pcre *command_timer;
+	pcre *time_offset;
+	pcre *time_hourminute;
+	pcre *time_timedate;
+	pcre *time_daytime;
 };
 extern struct patterns *patterns;
 void clean_spaces(char *str);

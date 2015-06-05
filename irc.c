@@ -252,10 +252,9 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 		int offsetcount = pcre_exec(patterns->command_timer, 0, msg, strlen(msg), 0, 0, offsets, 30);
 		if (offsetcount > 0) {
 			// We limit at 4 digits
-			char time[4];
-			pcre_copy_substring(msg, offsets, offsetcount, 1, time, 4);
-			int seconds = atoi(time)*60;
-			set_timer(in->nick, in->channel, seconds);
+			char time[BUFFER_SIZE];
+			pcre_copy_substring(msg, offsets, offsetcount, 1, time, BUFFER_SIZE);
+			timer_parse(in->nick, in->channel, time);
 		}
 	}
 
