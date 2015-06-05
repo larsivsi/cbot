@@ -189,14 +189,13 @@ char *add_word(char *string, const char *word)
 
 void markov_parse(struct recv_data *in)
 {
-	if (!initialized) {
-		return;
-	}
-
 	if (strncmp(in->message, TRIGGER, strlen(TRIGGER)) != 0) {
 		return;
 	}
 	if (strlen(in->message) < strlen(TRIGGER) + 5) {
+		return;
+	}
+	if (!initialized) {
 		return;
 	}
 
@@ -235,8 +234,11 @@ void markov_parse(struct recv_data *in)
 		word = next_word;
 	}
 
-	strip_newlines(buf);
 	clean_spaces(buf);
+	if (strlen(buf) > 1) {
+		buf[strlen(buf)-1] = 0; // strip terminating character
+	}
+	strip_newlines(buf);
 	buf = add_word(buf, "\n");
 
 	irc_send_str(buf);
