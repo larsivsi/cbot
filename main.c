@@ -26,78 +26,49 @@ struct patterns *patterns;
 struct timeval t_begin, t_now;
 int socket_fd;
 
-void compile_patterns(struct patterns *patterns)
+pcre *regcomp(const char *pattern)
 {
 	const char *pcre_err;
-	int pcre_err_off;
+	int pcre_err_offset;
+	pcre *ret = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_offset, 0);
+	if (ret == 0) {
+		fprintf(stderr, "error while compiling pattern '%s', at %d: %s\n", pattern, pcre_err_offset, pcre_err);
+		exit(1);
+	}
+	return ret;
+}
 
+void compile_patterns(struct patterns *patterns)
+{
 	// Privmsg
-	char *pattern = ":([^!]+)!(([^@]+)@(\\S+))\\sPRIVMSG\\s(\\S+)\\s:([^\\b]+)";
-	if ((patterns->privmsg = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
-		die("pcre compile privmsg", 0);
-
+	patterns->privmsg = regcomp(":([^!]+)!(([^@]+)@(\\S+))\\sPRIVMSG\\s(\\S+)\\s:([^\\b]+)");
 	// Kicks
-	pattern = ":([^!]+)!([^@]+)@(\\S+)\\sKICK\\s(\\S+)\\s(\\S+)\\s:";
-	if ((patterns->kick = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
-		die("pcre compile kick", 0);
-
+	patterns->kick = regcomp(":([^!]+)!([^@]+)@(\\S+)\\sKICK\\s(\\S+)\\s(\\S+)\\s:");
 	// Joins
-	//pattern = ":([^!]+)!([^@]+@\\S+)\\sJOIN\\s(\\S+)\\s(\\S+)\\s:(\\S+)";
-	pattern = ":([^!]+)!(\\S+)\\sJOIN\\s:(\\S+)";
-	if ((patterns->join = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == 0)
-		die("pcre compile join", 0);
-
+	// alt: ":([^!]+)!([^@]+@\\S+)\\sJOIN\\s(\\S+)\\s(\\S+)\\s:(\\S+)";
+	patterns->join = regcomp(":([^!]+)!(\\S+)\\sJOIN\\s:(\\S+)");
 	// Urls
-	//    pattern = "\\b((?:(?:([a-z][\\w\\.-]+:/{1,3})|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|\\}\\]|[^\\s`!()\\[\\]{};:'\".,<>?])|[a-z0-9.\\-+_]+@[a-z0-9.\\-]+[.][a-z]{1,5}[^\\s/`!()\\[\\]{};:'\".,<>?]))";
-	pattern = "(https?:\\/\\/\\S+)";
-	if ((patterns->url = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile url", 0);
-
+	// alt: "\\b((?:(?:([a-z][\\w\\.-]+:/{1,3})|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|\\}\\]|[^\\s`!()\\[\\]{};:'\".,<>?])|[a-z0-9.\\-+_]+@[a-z0-9.\\-]+[.][a-z]{1,5}[^\\s/`!()\\[\\]{};:'\".,<>?]))";
+	patterns->url = regcomp("(https?:\\/\\/\\S+)");
 	// HTML page titles
-	//    pattern = "<title>(.+)<\\/title>";
-	pattern = "<title>([^<]+)<\\/title>";
-	if ((patterns->html_title = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile title", 0);
-
+	// alt: "<title>(.+)<\\/title>";
+	patterns->html_title = regcomp("<title>([^<]+)<\\/title>");
 	// Eightball
-	pattern = "!8ball ([^$]+)";
-	if ((patterns->command_eightball = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile 8ball", 0);
-
+	patterns->command_eightball = regcomp("!8ball ([^$]+)");
 	// Timer
-	pattern = "!timer (\\d{1,4})";
-	if ((patterns->command_timer = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile timer", 0);
-
+	patterns->command_timer = regcomp("!timer (.+)$");
 	// Uptime
-	pattern = "!uptime";
-	if ((patterns->command_uptime = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile uptime", 0);
-
+	patterns->command_uptime = regcomp("!uptime");
 	// Give operator status
-	pattern = "!op (\\S+)";
-	if ((patterns->command_op = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile op", 0);
-
+	patterns->command_op = regcomp("!op (\\S+)");
 	// Say command for the console
-	pattern = "say (\\S+) (.*)$";
-	if ((patterns->command_say = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile command_say", 0);
-
+	patterns->command_say = regcomp("say (\\S+) (.*)$");
 	// kick command for the console
-	pattern = "kick (\\S+) (.+)$";
-	if ((patterns->command_kick = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile command_kick", 0);
-
+	patterns->command_kick = regcomp("kick (\\S+) (.+)$");
 	// Twitter
-	pattern = "!twitter (\\S+)";
-	if ((patterns->command_twitter = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile twitter", 0);
-
+	patterns->command_twitter = regcomp("!twitter (\\S+)");
 	// Tweet in HTML
-	pattern = "<p class=\"js-tweet-text tweet-text\">(.+)</p>";
-	if ((patterns->tweet = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL)
-		die("pcre compile tweet", 0);
+	patterns->tweet = regcomp("<p class=\"js-tweet-text tweet-text\">(.+)</p>");
 }
 
 void free_patterns(struct patterns *patterns)
@@ -355,6 +326,7 @@ int main(int argc, char **argv)
 			char *bufbegin = buffer;
 			while ((newlinepos = strchr(bufbegin, '\n'))) {
 				*newlinepos = 0;
+//				printf(" ~ %s\n", bufbegin);
 				// Only handle privmsg
 				if (irc_parse_input(bufbegin, irc, patterns)) {
 					irc_handle_input(irc, patterns);
