@@ -37,6 +37,18 @@ void clean_spaces(char *str)
 			j++;
 		}
 	}
+	for (i=0; i<strlen(str); i++) {
+		if (str[i] != ' ') {
+			break;
+		}
+	}
+	memmove(str, str + i, strlen(str) - i);
+	for (i=strlen(str) - 1; i > 0; i++) {
+		if (str[i] != ' ') {
+			break;
+		}
+		str[i] = 0;
+	}
 	str[j] = 0; // null terminate
 }
 
