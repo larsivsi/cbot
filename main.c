@@ -72,13 +72,13 @@ void compile_patterns(struct patterns *patterns)
 	patterns->command_timer = regcomp("!timer (.+)");
 	// time patterns
 	// {1w,1d,1h,1m,1s} message
-	patterns->time_offset = regcomp("(\\d{1,4}) ?(w|d|h|m|s) (\\S+)");
+	patterns->time_offset = regcomp("^(\\d{1,4}) ?(w|d|h|m|s) (\\S+)");
 	// hh:mm message
-	patterns->time_hourminute = regcomp("(\\d\\d?):(\\d\\d?) (\\S+)");
+	patterns->time_hourminute = regcomp("^(\\d\\d?):(\\d\\d?) (\\S+)");
 	// dd/mm-hh:mm message
-	patterns->time_timedate = regcomp("(\\d\\d?)/(\\d\\d?)-(\\d\\d?):(\\d\\d?) (\\S+)");
+	patterns->time_timedate = regcomp("^(\\d\\d?)/(\\d\\d?)-(\\d\\d?):(\\d\\d?) (\\S+)");
 	// day-hh:mm message
-	patterns->time_daytime = regcomp("(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)-(\\d\\d?):(\\d\\d?) (\\S+)");
+	patterns->time_daytime = regcomp("^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)-(\\d\\d?):(\\d\\d?) (\\S+)");
 }
 
 void free_patterns(struct patterns *patterns)

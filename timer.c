@@ -23,13 +23,23 @@ static void *timer_thread(void *argument)
 	timer_thread_t *object = (timer_thread_t*)argument;
 	sleep(object->seconds);
 	char buf[strlen(object->channel) + strlen(object->nick) + 18];
-	sprintf(buf, "PRIVMSG %s :%s: DING!\n", object->channel, object->nick);
+	sprintf(buf, "PRIVMSG %s :%s: %s!\n", object->channel, object->nick, object->message);
 	irc_send_str(buf);
 	free(object->thread);
 	free(object);
 
 	return 0;
 }
+
+const char *days[] = {
+	"sun",
+	"mon",
+	"tue",
+	"wed",
+	"thu",
+	"fri",
+	"sat"
+};
 
 void set_timer(const char *nick, const char *channel, const char *message, unsigned long seconds)
 {
@@ -50,18 +60,23 @@ void set_timer(const char *nick, const char *channel, const char *message, unsig
 	pthread_detach(*thread);
 }
 
-void timer_parse(const char *nick, const char *channel, const char *time)
+void timer_parse(const char *nick, const char *channel, const char *time_str)
 {
+	printf("timestr: %s\n", time_str);
 	int offsets[30];
-	int offsetcount = pcre_exec(patterns->time_offset, 0, time, strlen(time), 0, 0, offsets, 30);
+	int offsetcount = pcre_exec(patterns->time_offset, 0, time_str, strlen(time_str), 0, 0, offsets, 30);
+
+	time_t rawtime = time(NULL);
+	struct tm *current_time = localtime(&rawtime);
+
 	if (offsetcount == 4) {
 		char count_str[5];
-		pcre_copy_substring(time, offsets, offsetcount, 1, count_str, 5);
+		pcre_copy_substring(time_str, offsets, offsetcount, 1, count_str, 5);
 		unsigned long count = atoi(count_str);
 		char type[2];
-		pcre_copy_substring(time, offsets, offsetcount, 2, type, 2);
-		char message[BUFFER_SIZE];
-		pcre_copy_substring(time, offsets, offsetcount, 3, message, BUFFER_SIZE);
+		pcre_copy_substring(time_str, offsets, offsetcount, 2, type, 2);
+		char message[64];
+		pcre_copy_substring(time_str, offsets, offsetcount, 3, message, 64);
 		unsigned long seconds;
 		switch(type[0]) {
 		case 'w':
@@ -86,7 +101,132 @@ void timer_parse(const char *nick, const char *channel, const char *time)
 		set_timer(nick, channel, message, seconds);
 		return;
 	}
+	offsetcount = pcre_exec(patterns->time_hourminute, 0, time_str, strlen(time_str), 0, 0, offsets, 30);
+	if (offsetcount == 4) {
+		char hour_str[3];
+		char minute_str[3];
+		char message[64];
+		pcre_copy_substring(time_str, offsets, offsetcount, 1, hour_str, 3);
+		pcre_copy_substring(time_str, offsets, offsetcount, 2, minute_str, 3);
+		pcre_copy_substring(time_str, offsets, offsetcount, 3, message, 64);
+		int hour = atoi(hour_str);
+		if (hour > 23) {
+			printf("invalid hour: %s\n" , hour_str);
+			return;
+		}
+		int minute = atoi(minute_str);
+		if (minute > 59) {
+			printf("invalid minute: %s\n", minute_str);
+			return;
+		}
 
+		int hours = hour - current_time->tm_hour;
+		int minutes = minute - current_time->tm_min;
+		if (hours < 0) {
+			hours += 24;
+		}
+		if (minutes < 0) {
+			minutes += 60;
+		}
+		printf("hours: %d minutes: %d\n", hours, minutes);
+		int seconds = hours * 3600 + minutes * 60;
+		set_timer(nick, channel, message, seconds);
+		return;
+	}
+	offsetcount = pcre_exec(patterns->time_timedate, 0, time_str, strlen(time_str), 0, 0, offsets, 30);
+	if (offsetcount == 6) {
+		char day_str[3];
+		char month_str[3];
+		char hour_str[3];
+		char minute_str[3];
+		char message[64];
+		pcre_copy_substring(time_str, offsets, offsetcount, 1, day_str, 3);
+		pcre_copy_substring(time_str, offsets, offsetcount, 2, month_str, 3);
+		pcre_copy_substring(time_str, offsets, offsetcount, 3, hour_str, 3);
+		pcre_copy_substring(time_str, offsets, offsetcount, 4, minute_str, 3);
+		pcre_copy_substring(time_str, offsets, offsetcount, 5, message, 64);
+		int day = atoi(day_str);
+		if (day > 31) {
+			printf("invalid day: %s\n", day_str);
+			return;
+		}
+		int month = atoi(month_str);
+		if (month < 1 || month > 12) {
+			printf("invalid month: %s\n", month_str);
+			return;
+		}
+		month--; // 0-indexed...
+		int hour = atoi(hour_str);
+		if (hour > 23) {
+			printf("invalid hour: %s\n" , hour_str);
+			return;
+		}
+		int minute = atoi(minute_str);
+		if (minute > 59) {
+			printf("invalid minute: %s\n", minute_str);
+			return;
+		}
+		struct tm target_time;
+		target_time.tm_sec = current_time->tm_sec;
+		target_time.tm_min = minute;
+		target_time.tm_hour = hour;
+		target_time.tm_mday = day;
+		target_time.tm_mon = month;
+		target_time.tm_year = current_time->tm_year;
+		target_time.tm_isdst = -1; // mktime should figure it out for itself
+		if (mktime(&target_time) - mktime(current_time) <= 0) {
+			target_time.tm_year++;
+		}
+		int seconds = difftime(mktime(&target_time), mktime(current_time));
+		set_timer(nick, channel, message, seconds);
+		return;
+	}
+	offsetcount = pcre_exec(patterns->time_daytime, 0, time_str, strlen(time_str), 0, 0, offsets, 30);
+	if (offsetcount == 5) {
+		char day_str[16];
+		char hour_str[3];
+		char minute_str[3];
+		char message[64];
+		pcre_copy_substring(time_str, offsets, offsetcount, 1, day_str, 16);
+		pcre_copy_substring(time_str, offsets, offsetcount, 2, hour_str, 3);
+		pcre_copy_substring(time_str, offsets, offsetcount, 3, minute_str, 3);
+		pcre_copy_substring(time_str, offsets, offsetcount, 4, message, 64);
+		int day;
+		for (day = 0; day < 7; day++) {
+			if (strncmp(day_str, days[day], 3) == 0) {
+				break;
+			}
+		}
+		int days = day - current_time->tm_wday;
+		if (days <= 0) {
+			days += 7;
+		}
+		int hour = atoi(hour_str);
+		if (hour > 23) {
+			printf("invalid hour: %s\n" , hour_str);
+			return;
+		}
+		int minute = atoi(minute_str);
+		if (minute > 59) {
+			printf("invalid minute: %s\n", minute_str);
+			return;
+		}
+		int hours = hour - current_time->tm_hour;
+		int minutes = minute - current_time->tm_min;
+		if (hours < 0) {
+			hours += 24;
+		}
+		if (minutes < 0) {
+			minutes += 60;
+		}
+		printf("days: %d, hour: %d, min: %d\n", days, hours, minutes);
+		int seconds = days * 86400 + hours * 3600 + minutes * 60;
+		set_timer(nick, channel, message, seconds);
+		return;
+	}
+	char buf[strlen(channel) + 37/*constant text*/ + 11 /*maximum length of the unsigned int*/];
+	sprintf(buf, "PRIVMSG %s :timer example: \"!timer 17m pizza!\", time syntax examples: 1d, 10m, 13:37, 24/12-13:37, monday-13:37\n", channel);
+	irc_send_str(buf);
 }
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/
