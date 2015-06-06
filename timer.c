@@ -44,8 +44,11 @@ const char *days[] = {
 void set_timer(const char *nick, const char *channel, const char *message, unsigned long seconds)
 {
 	// Tell the user how long he has to wait
-	char buf[strlen(channel) + 37/*constant text*/ + 11 /*maximum length of the unsigned int*/];
-	sprintf(buf, "PRIVMSG %s :Notifying you in %lu seconds\n", channel, seconds);
+	time_t t = time(NULL) + seconds;
+	char timedatebuf[BUFFER_SIZE];
+	strftime(timedatebuf, BUFFER_SIZE, "%a %d.%m.%Y %H:%M:%S", localtime(&t));
+	char buf[BUFFER_SIZE];
+	snprintf(buf, BUFFER_SIZE, "PRIVMSG %s :Notifying you in %lu seconds (%s) \n", channel, seconds, timedatebuf);
 	irc_send_str(buf);
 
 	// Create a thread that will sleep for the specified amount of time before suiciding
