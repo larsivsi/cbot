@@ -340,7 +340,7 @@ int main(int argc, char **argv)
 			char *bufbegin = buffer;
 			while ((newlinepos = strchr(bufbegin, '\n'))) {
 				*newlinepos = 0;
-//				printf(" ~ %s\n", bufbegin);
+				printf(" ~ %s\n", bufbegin);
 				// Only handle privmsg
 				if (irc_parse_input(bufbegin, irc, patterns)) {
 					irc_handle_input(irc, patterns);
