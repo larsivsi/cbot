@@ -125,6 +125,8 @@ void get_title_from_url(struct recv_data *in, const char *url)
 		char buf[strlen(in->channel) + strlen(title) + 15];
 		sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, title);
 		irc_send_str(buf);
+	} else {
+		printf(" ! got empty title\n");
 	}
 	free(title);
 }
