@@ -106,7 +106,7 @@ char *fetch_url_and_match(const char *url, const pcre *pattern)
 	}
 
 	int res_buffers[30];
-	int resultcount = pcre_exec(pattern, 0, http_buffer, http_buffer_pos, 0, 0, res_buffers, 30);
+	int resultcount = pcre_exec(pattern, 0, http_buffer, http_buffer_pos, 0, PCRE_NO_UTF8_CHECK, res_buffers, 30);
 	if (resultcount > 0) {
 		pcre_copy_substring(http_buffer, res_buffers, resultcount, 1, result, BUFFER_SIZE);
 		strip_newlines(result);
