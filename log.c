@@ -233,7 +233,7 @@ void log_url(struct recv_data *in, const char *url)
 				times_posted, 
 				nick, 
 				date);
-		irc_send_str(buf);
+//		irc_send_str(buf);
 		PQclear(link_result);
 
 		//UPDATE links SET times_posted = times_posted+1 WHERE link = $1
