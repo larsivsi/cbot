@@ -286,7 +286,7 @@ char *log_get_identity(const char *nick)
 		return 0;
 	}
 
-	char *identity = PQgetvalue(result, 0, 0);
+	char *identity = strdup(PQgetvalue(result, 0, 0));
 	if (strcmp(identity, "") == 0) {
 		identity = 0;
 	} else {
