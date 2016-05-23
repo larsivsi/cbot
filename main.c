@@ -30,7 +30,7 @@ pcre *regcomp(const char *pattern)
 {
 	const char *pcre_err;
 	int pcre_err_offset;
-	pcre *ret = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_offset, 0);
+	pcre *ret = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8 | PCRE_NO_UTF8_CHECK, &pcre_err, &pcre_err_offset, 0);
 	if (ret == 0) {
 		fprintf(stderr, "error while compiling pattern '%s', at %d: %s\n", pattern, pcre_err_offset, pcre_err);
 		exit(1);
