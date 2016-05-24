@@ -30,34 +30,45 @@ size_t http_write_callback(void *contents, size_t element_size, size_t num_eleme
 
 void clean_spaces(char *str)
 {
-	unsigned int i,j;
+	unsigned int i = 0, j = 0, stringlength = strlen(str);
+	char leading = 1;
 
-	// Strip tabs
-	for (i=0; i<strlen(str); i++) {
-		if (str[i] == '\t') {
-			str[i] = ' ';
+	while (i < stringlength)
+	{
+		if (leading && str[i] == ' ')
+		{
+			i++;
 		}
-	}
+		else
+		{
+			leading = 0;
+			// Change tabs into spaces
+			if (str[i] == '\t')
+			{
+				str[i] = ' ';
+				// Fallthrough
+			}
 
-	for (i=j=0; i<strlen(str); i++) {
-		if (str[i] != ' ' || str[i+1] != ' ') {
+			// Skip subsequent whitespaces
+			if (str[i] == ' ' && i < stringlength-1 && str[i+1] == ' ')
+			{
+				i++;
+				continue;
+			}
+
+			// Skip trailing whitespace
+			if (str[i] == ' ' && i == stringlength-1)
+			{
+				i++;
+				continue;
+			}
+
 			str[j] = str[i];
+			i++;
 			j++;
 		}
 	}
-	for (i=0; i<strlen(str); i++) {
-		if (str[i] != ' ') {
-			break;
-		}
-	}
-	memmove(str, str + i, strlen(str) - i);
-	for (i=strlen(str) - 1; i > 0; i++) {
-		if (str[i] != ' ') {
-			break;
-		}
-		str[i] = 0;
-	}
-	str[j] = 0; // null terminate
+	str[j] = '\0';
 }
 
 void strip_newlines(char *str)
