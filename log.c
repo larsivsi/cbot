@@ -286,14 +286,12 @@ char *log_get_identity(const char *nick)
 		return 0;
 	}
 
-	char *identity = strdup(PQgetvalue(result, 0, 0));
+	char *identity = PQgetvalue(result, 0, 0);
 	if (strcmp(identity, "") == 0) {
 		identity = 0;
 	} else {
 		// original return value cleared when we run PQclear, so we copy
-		char *buffer = malloc(strlen(identity));
-		strcpy(buffer, identity);
-		identity = buffer;
+		identity = strdup(identity);
 	}
 	PQclear(result);
 	return identity;
@@ -317,6 +315,7 @@ void db_user_add_op(const char *nick, const char *channel)
 	}
 
 	PQclear(addresult);
+	free(ident);
 }
 
 int db_user_is_op(const char *ident, const char *channel)
