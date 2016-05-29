@@ -74,19 +74,6 @@ void strip_newlines(char *str)
 	for (unsigned int i=0; i<strlen(str); i++) if (str[i] == '\n' || str[i] == '\r') str[i] = ' ';
 }
 
-void strip_html_tags(char *str)
-{
-	int deleting = 0;
-	int j=0;
-	for (unsigned int i=0; i < strlen(str); i++) {
-		if (str[i] == '<') deleting = 1;
-		str[j] = str[i];
-		if (!deleting) j++;
-		if (str[i] == '>') deleting = 0;
-	}
-	str[j] = '\0';
-}
-
 #define ANGRY_ROBOT "\342\224\227\133\302\251\040\342\231\222\040\302\251\135\342\224\233\040\357\270\265\040\342\224\273\342\224\201\342\224\273"
 char *fetch_url_and_match(const char *url, const pcre *pattern)
 {
@@ -138,18 +125,6 @@ void get_title_from_url(struct recv_data *in, const char *url)
 		printf(" ! got empty title\n");
 	}
 	free(title);
-}
-
-void get_last_tweet_from_user(struct recv_data *in, const char *user)
-{
-	char url[strlen("https://twitter.com/") + strlen(user)];
-	sprintf(url, "https://twitter.com/%s", user);
-	char *tweet = fetch_url_and_match(url, patterns->tweet);
-	strip_html_tags(tweet);
-	char buf[strlen("PRIVMSG  :>> \n") + strlen(in->channel) + strlen(tweet)];
-	sprintf(buf, "PRIVMSG %s :>> %s\n", in->channel, tweet);
-	irc_send_str(buf);
-	free(tweet);
 }
 
 /* vim: set ts=8 sw=8 tw=0 noexpandtab cindent softtabstop=8 :*/

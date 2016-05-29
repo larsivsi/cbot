@@ -97,9 +97,6 @@ void set_config_param(char *parameter, char *value) {
 			else if (!strcmp(module, "timer")) {
 				config->enabled_modules |= MODULE_TIMER;
 			}
-			else if (!strcmp(module, "twitter")) {
-				config->enabled_modules |= MODULE_TWITTER;
-			}
 			else if (!strcmp(module, "markov")) {
 				config->enabled_modules |= MODULE_MARKOV;
 			}

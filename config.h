@@ -6,10 +6,9 @@
 #define MODULE_EIGHTBALL  1<<0
 #define MODULE_URLS       1<<1
 #define MODULE_TIMER      1<<2
-#define MODULE_TWITTER    1<<3
-#define MODULE_MARKOV     1<<4
-#define MODULE_AUTOOP     1<<5
-#define MODULE_LOG	  1<<6
+#define MODULE_MARKOV     1<<3
+#define MODULE_AUTOOP     1<<4
+#define MODULE_LOG	  1<<5
 
 struct config {
 	char *nick;

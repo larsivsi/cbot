@@ -63,10 +63,6 @@ void compile_patterns(struct patterns *patterns)
 	patterns->command_say = regcomp("say (\\S+) (.*)$");
 	// kick command for the console
 	patterns->command_kick = regcomp("kick (\\S+) (.+)$");
-	// Twitter
-	patterns->command_twitter = regcomp("!twitter (\\S+)");
-	// Tweet in HTML
-	patterns->tweet = regcomp("<p class=\"js-tweet-text tweet-text\">(.+)</p>");
 
 	// Timer
 	patterns->command_timer = regcomp("!timer (.+)");
@@ -88,13 +84,11 @@ void free_patterns(struct patterns *patterns)
 	pcre_free(patterns->join);
 	pcre_free(patterns->url);
 	pcre_free(patterns->html_title);
-	pcre_free(patterns->tweet);
 	pcre_free(patterns->command_eightball);
 	pcre_free(patterns->command_uptime);
 	pcre_free(patterns->command_say);
 	pcre_free(patterns->command_kick);
 	pcre_free(patterns->command_op);
-	pcre_free(patterns->command_twitter);
 	pcre_free(patterns->command_timer);
 	pcre_free(patterns->time_offset);
 	pcre_free(patterns->time_hourminute);

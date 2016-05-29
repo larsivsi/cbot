@@ -18,12 +18,8 @@ struct patterns {
 	pcre *command_eightball;
 	pcre *command_uptime;
 	pcre *command_say;
-	pcre *command_twitter;
 	pcre *command_kick;
 	pcre *command_op;
-
-	pcre *twitter;
-	pcre *tweet;
 
 	pcre *command_timer;
 	pcre *time_offset;

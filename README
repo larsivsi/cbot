@@ -17,7 +17,6 @@ Features:
  * Auto op of joining users
  * Reload of everything (program code and config)
  * Magic git pull and rebuild
- * Fetch last tweet from twitter user
 
 TODO:
  * Package tracking

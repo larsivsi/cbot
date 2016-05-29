@@ -263,16 +263,6 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 		}
 	}
 
-	// Last tweet
-	if (config->enabled_modules & MODULE_TIMER) {
-		int offsetcount = pcre_exec(patterns->command_twitter, 0, msg, strlen(msg), 0, 0, offsets, 30);
-		if (offsetcount > 0) {
-			char username[BUFFER_SIZE];
-			pcre_copy_substring(msg, offsets, offsetcount, 1, username, BUFFER_SIZE);
-			get_last_tweet_from_user(in, username);
-		}
-	}
-
 	// Uptime
 	int offsetcount = pcre_exec(patterns->command_uptime, 0, msg, strlen(msg), 0, 0, offsets, 30);
 	if (offsetcount > 0) {
