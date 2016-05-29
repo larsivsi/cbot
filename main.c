@@ -256,7 +256,11 @@ int main(int argc, char **argv)
 			net_connect();
 		}
 		if (FD_ISSET(STDIN_FILENO, &socket_set)) {
-			fgets(input, BUFFER_SIZE, stdin);
+			if (fgets(input, BUFFER_SIZE, stdin) == NULL) {
+				printf(" >> Error while reading from stdin!\n");
+				continue;
+			}
+
 			if (strcmp(input, "quit\n") == 0) {
 				printf(" >> Bye!\n");
 				break;
