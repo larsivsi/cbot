@@ -94,7 +94,7 @@ char *fetch_url_and_match(const char *url, const pcre *pattern)
 
 	int curl_err;
 	char err_buf[256];
-	char *result = malloc(BUFFER_SIZE);
+	char *result = calloc(sizeof(char), BUFFER_SIZE);
 	CURL *curl_handle = curl_easy_init();
 	curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 	curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, &http_write_callback);
