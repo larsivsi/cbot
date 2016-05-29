@@ -19,6 +19,10 @@ void eightball(struct recv_data *in, char *arguments)
 		count++;
 		pch = strtok(NULL, ":");
 	}
+	if (count == 0) {
+		printf("No options given!\n");
+		return;
+	}
 	int win = rand() % count;
 	char *buf = (char*)malloc(BUFFER_SIZE);
 	sprintf(buf, "PRIVMSG %s :%s: the answer to your question is: %s\n",
