@@ -152,7 +152,7 @@ void markov_init(const char *corpus_file)
 		}
 
 		item->words[item->words_count-1] = strdup(word3);
-		if (pos % 10000 == 0) {
+		if (pos % 10000 == 0 && length) {
 			printf(" + markov: %ld%% parsing complete\n", 100 * ((size_t)word3 - (size_t)text) / length);
 		}
 
@@ -230,7 +230,6 @@ void markov_parse(struct recv_data *in)
 		if (next_word[strlen(next_word)-1] == ',') break;
 		if (next_word[strlen(next_word)-1] == '!') break;
 		item = get_item(hash_map, word, next_word, 0);
-		previous = word;
 		word = next_word;
 	}
 
