@@ -174,11 +174,12 @@ void irc_send_str(char *msg)
 {
 	pthread_mutex_lock(send_mutex);
 
-	unsigned int length = strlen(msg);
+	size_t length = strlen(msg);
 	// Check if we have enough space
 	if (length > send_buffer_size - send_buffer_used) {
-		int new_buffer_size = send_buffer_size + BUFFER_SIZE;
-		if (!realloc(send_buffer, new_buffer_size)) {
+		size_t new_buffer_size = send_buffer_size + BUFFER_SIZE;
+		send_buffer = realloc(send_buffer, new_buffer_size);
+		if (!send_buffer) {
 			die("Unable to allocate more memory for send buffer", strerror(errno));
 		}
 		send_buffer_size = new_buffer_size;
