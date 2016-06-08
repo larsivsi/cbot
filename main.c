@@ -225,7 +225,6 @@ int main(int argc, char **argv)
 	if (socket_fd == -1) {
 		printf(" - Connecting to %s:%s with nick %s, joining channels %s...\n",
 			config->host, config->port, config->nick, channels);
-		close(socket_fd);
 		net_connect();
 	} else { // In-place upgrade yo
 		printf(" >> Already connected, upgraded in-place!\n");
