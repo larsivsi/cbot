@@ -109,7 +109,12 @@ void markov_init(const char *corpus_file)
 	}
 
 	fseek(file, 0L, SEEK_END);
-	size_t length = ftell(file);
+	long length = ftell(file);
+	if (length == -1) {
+		printf(" ! markov: unable to get file size\n");
+		fclose(file);
+		return;
+	}
 	fseek(file, 0L, SEEK_SET);
 
 	char *text = malloc(length+1000);
@@ -119,7 +124,7 @@ void markov_init(const char *corpus_file)
 		return;
 	}
 
-	size_t read_bytes = fread(text, sizeof(unsigned char), length, file);
+	long read_bytes = fread(text, sizeof(unsigned char), length, file);
 	if (length != read_bytes) {
 		printf(" ! markov: unable to read entire file\n");
 		fclose(file);
@@ -130,7 +135,7 @@ void markov_init(const char *corpus_file)
 
 	text[length] = 0;
 	// Strip newlines
-	for (size_t i = 0; i < length; i++) {
+	for (long i = 0; i < length; i++) {
 		if (text[i]=='\n') {
 			text[i]=' ';
 		}
