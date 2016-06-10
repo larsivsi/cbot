@@ -41,7 +41,7 @@ unsigned long hash(const char *string)
 
 hash_item *get_item(hash_item table[], const char *word1, const char *word2, int create_new)
 {
-	char tuple[strlen(word1) + strlen(word2)];
+	char tuple[strlen(word1) + strlen(word2) + 1]; // + 1 for null terminating byte
 	strcpy(tuple, word1);
 	strcat(tuple, word2);
 
