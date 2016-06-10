@@ -115,12 +115,14 @@ void markov_init(const char *corpus_file)
 	char *text = malloc(length+1000);
 	if (!text) {
 		printf(" ! markov: unable to allocate memory for corpus file\n");
+		fclose(file);
 		return;
 	}
 
 	size_t read_bytes = fread(text, sizeof(unsigned char), length, file);
 	if (length != read_bytes) {
 		printf(" ! markov: unable to read entire file\n");
+		fclose(file);
 		free(text);
 		return;
 	}
