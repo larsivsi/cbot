@@ -57,7 +57,9 @@ void set_timer(const char *nick, const char *channel, const char *message, unsig
 	object->thread = thread;
 	object->seconds = seconds;
 	strncpy(object->nick, nick, 32);
+	object->nick[31] = 0;
 	strncpy(object->channel, channel, 32);
+	object->channel[31] = 0;
 	strncpy(object->message, message, BUFFER_SIZE);
 	object->message[BUFFER_SIZE - 1] = 0;
 	pthread_create(thread, 0, &timer_thread, object);
