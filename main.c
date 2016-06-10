@@ -322,6 +322,7 @@ int main(int argc, char **argv)
 			}
 
 			recv_size = recv(socket_fd, buffer + buffer_length, BUFFER_SIZE - buffer_length - 1, 0);
+			buffer[buffer_length] = '\0';
 			buffer_length += recv_size;
 			if (recv_size == 0) {
 				printf(" >> recv_size is 0, assuming closed remote socket, reconnecting\n");
