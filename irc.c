@@ -138,6 +138,7 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 				break;
 			}
 		}
+		free(identity);
 		if (!valid) {
 			printf(" >>> infighting between our users, let's not meddle\n");
 			return 0;
