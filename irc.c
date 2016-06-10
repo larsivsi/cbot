@@ -113,11 +113,6 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		int valid = 0;
 		int i=0;
 		while (config->ops[i]) {
-			if (!identity) {
-				valid = 1;
-				break;
-			}
-
 			if (!strcmp(config->ops[i++], identity)) {
 				valid = 1;
 				break;
