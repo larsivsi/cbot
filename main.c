@@ -195,15 +195,6 @@ int main(int argc, char **argv)
 		conf_file = "cbot.conf";
 	load_config(conf_file);
 
-	char channels[BUFFER_SIZE];
-	for (int i = 0; config->channels[i] != NULL; i++) {
-		if (i > 0) {
-			strcat(channels, ",");
-			strcat(channels, config->channels[i]);
-		} else {
-			strcpy(channels, config->channels[i]);
-		}
-	}
 	// Set rand seed
 	srand(time(NULL));
 
@@ -223,8 +214,8 @@ int main(int argc, char **argv)
 	irc_init();
 
 	if (socket_fd == -1) {
-		printf(" - Connecting to %s:%s with nick %s, joining channels %s...\n",
-			config->host, config->port, config->nick, channels);
+		printf(" - Connecting to %s:%s with nick %s, joining channels...\n",
+			config->host, config->port, config->nick);
 		net_connect();
 	} else { // In-place upgrade yo
 		printf(" >> Already connected, upgraded in-place!\n");
