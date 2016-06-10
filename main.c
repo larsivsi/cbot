@@ -135,7 +135,7 @@ void join_channels()
 {
 	int i=0;
 	while (config->channels[i]) {
-		char buffer[strlen("JOIN \n") + strlen(config->channels[i])];
+		char buffer[strlen("JOIN \n") + strlen(config->channels[i]) + 1]; // + 1 for terminating null byte
 		sprintf(buffer, "JOIN %s\n", config->channels[i++]);
 		irc_send_str(buffer);
 	}
@@ -161,7 +161,7 @@ void net_connect()
 
 	// Join
 	printf("connecting...\n");
-	char buffer[strlen("USER  host realmname :\nNICK \n") + strlen(config->user) + strlen(config->nick) + strlen(config->nick)];
+	char buffer[strlen("USER  host realmname :\nNICK \n") + strlen(config->user) + strlen(config->nick) + strlen(config->nick) + 1]; // + 1 for terminating null byte
 	sprintf(buffer, "USER %s host realmname :%s\nNICK %s\n",
 			config->user, config->nick, config->nick);
 	irc_send_str(buffer);

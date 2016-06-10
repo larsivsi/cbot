@@ -145,7 +145,7 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		}
 
 
-		char sendbuf[strlen("KICK   :Gene police! You! Out of the pool, now!\n") + strlen(in->channel) + strlen(in->nick)];
+		char sendbuf[strlen("KICK   :Gene police! You! Out of the pool, now!\n") + strlen(in->channel) + strlen(in->nick) + 1]; // + 1 for terminating null byte
 		sprintf(sendbuf, "KICK %s %s :Gene police! You! Out of the pool, now!\n", in->channel, in->nick);
 		irc_send_str(sendbuf);
 
@@ -163,7 +163,7 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		pcre_copy_substring(msg, offsets, offsetcount, 3, channel, BUFFER_SIZE);
 
 		if (db_user_is_op(identity, channel)) {
-			char buf[strlen("MODE  +o \n") + strlen(channel) + strlen(nick)];
+			char buf[strlen("MODE  +o \n") + strlen(channel) + strlen(nick) + 1]; // + 1 for terminating null byte
 			sprintf(buf, "MODE %s +o %s\n", channel, nick);
 			irc_send_str(buf);
 		}
