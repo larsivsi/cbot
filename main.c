@@ -72,7 +72,7 @@ void compile_patterns(struct patterns *patterns)
 	// dd/mm-hh:mm message
 	patterns->time_timedate = regcomp("^(\\d\\d?)/(\\d\\d?)-(\\d\\d?):(\\d\\d?) ([^\r\n]+)");
 	// day-hh:mm message
-	patterns->time_daytime = regcomp("^(monday|tuesday|wednesday|thursday|friday|saturdy|sunday|mon|tue|wed|thu|fri|sat|sun)-(\\d\\d?):(\\d\\d?) ([^\r\n]+)");
+	patterns->time_daytime = regcomp("^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)-(\\d\\d?):(\\d\\d?) ([^\r\n]+)");
 }
 
 void free_patterns(struct patterns *patterns)
