@@ -14,7 +14,7 @@ typedef struct
 	pthread_t *thread;
 	char nick[32];
 	char channel[32];
-	char message[BUFFER_SIZE];
+	char message[TIMER_MESSAGE_SIZE];
 	unsigned int seconds;
 } timer_thread_t;
 
@@ -22,8 +22,11 @@ static void *timer_thread(void *argument)
 {
 	timer_thread_t *object = (timer_thread_t*)argument;
 	sleep(object->seconds);
-	char buf[strlen(object->channel) + strlen(object->nick) + 18];
-	sprintf(buf, "PRIVMSG %s :%s: %s!\n", object->channel, object->nick, object->message);
+
+	size_t buf_size = strlen(object->channel) + strlen(object->nick) + strlen(object->message) + 15;
+	char buf[buf_size];
+	snprintf(buf, buf_size, "PRIVMSG %s :%s: %s!\n", object->channel, object->nick, object->message);
+	buf[buf_size-1] = '\0';
 	irc_send_str(buf);
 	free(object->thread);
 	free(object);
@@ -60,8 +63,8 @@ void set_timer(const char *nick, const char *channel, const char *message, unsig
 	object->nick[31] = 0;
 	strncpy(object->channel, channel, 32);
 	object->channel[31] = 0;
-	strncpy(object->message, message, BUFFER_SIZE);
-	object->message[BUFFER_SIZE - 1] = 0;
+	strncpy(object->message, message, TIMER_MESSAGE_SIZE);
+	object->message[TIMER_MESSAGE_SIZE - 1] = 0;
 	pthread_create(thread, 0, &timer_thread, object);
 	pthread_detach(*thread);
 }
@@ -81,8 +84,8 @@ void timer_parse(const char *nick, const char *channel, const char *time_str)
 		unsigned long count = atoi(count_str);
 		char type[2];
 		pcre_copy_substring(time_str, offsets, offsetcount, 2, type, 2);
-		char message[64];
-		pcre_copy_substring(time_str, offsets, offsetcount, 3, message, 64);
+		char message[TIMER_MESSAGE_SIZE];
+		pcre_copy_substring(time_str, offsets, offsetcount, 3, message, TIMER_MESSAGE_SIZE);
 		unsigned long seconds;
 		switch(type[0]) {
 		case 'w':
@@ -111,10 +114,10 @@ void timer_parse(const char *nick, const char *channel, const char *time_str)
 	if (offsetcount == 4) {
 		char hour_str[3];
 		char minute_str[3];
-		char message[64];
+		char message[TIMER_MESSAGE_SIZE];
 		pcre_copy_substring(time_str, offsets, offsetcount, 1, hour_str, 3);
 		pcre_copy_substring(time_str, offsets, offsetcount, 2, minute_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 3, message, 64);
+		pcre_copy_substring(time_str, offsets, offsetcount, 3, message, TIMER_MESSAGE_SIZE);
 		int hour = atoi(hour_str);
 		if (hour > 23) {
 			printf("invalid hour: %s\n" , hour_str);
@@ -145,12 +148,12 @@ void timer_parse(const char *nick, const char *channel, const char *time_str)
 		char month_str[3];
 		char hour_str[3];
 		char minute_str[3];
-		char message[64];
+		char message[TIMER_MESSAGE_SIZE];
 		pcre_copy_substring(time_str, offsets, offsetcount, 1, day_str, 3);
 		pcre_copy_substring(time_str, offsets, offsetcount, 2, month_str, 3);
 		pcre_copy_substring(time_str, offsets, offsetcount, 3, hour_str, 3);
 		pcre_copy_substring(time_str, offsets, offsetcount, 4, minute_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 5, message, 64);
+		pcre_copy_substring(time_str, offsets, offsetcount, 5, message, TIMER_MESSAGE_SIZE);
 		int day = atoi(day_str);
 		if (day > 31) {
 			printf("invalid day: %s\n", day_str);
@@ -192,11 +195,11 @@ void timer_parse(const char *nick, const char *channel, const char *time_str)
 		char day_str[16];
 		char hour_str[3];
 		char minute_str[3];
-		char message[64];
+		char message[TIMER_MESSAGE_SIZE];
 		pcre_copy_substring(time_str, offsets, offsetcount, 1, day_str, 16);
 		pcre_copy_substring(time_str, offsets, offsetcount, 2, hour_str, 3);
 		pcre_copy_substring(time_str, offsets, offsetcount, 3, minute_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 4, message, 64);
+		pcre_copy_substring(time_str, offsets, offsetcount, 4, message, TIMER_MESSAGE_SIZE);
 		int day;
 		for (day = 0; day < 7; day++) {
 			if (strncmp(day_str, days[day], 3) == 0) {

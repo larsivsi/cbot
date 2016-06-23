@@ -41,40 +41,38 @@ pcre *regcomp(const char *pattern)
 void compile_patterns(struct patterns *patterns)
 {
 	// Privmsg
-	patterns->privmsg = regcomp(":([^!]+)!(([^@]+)@(\\S+))\\sPRIVMSG\\s(\\S+)\\s:([^\\b]+)");
+	patterns->privmsg = regcomp(":([^!]+)!(([^@]+)@(\\S+)) PRIVMSG (\\S+) :([^\r\n]+)");
 	// Kicks
-	patterns->kick = regcomp(":([^!]+)!([^@]+)@(\\S+)\\sKICK\\s(\\S+)\\s(\\S+)\\s:");
+	patterns->kick = regcomp(":([^!]+)!([^@]+)@(\\S+) KICK (\\S+) (\\S+) :");
 	// Joins
-	// alt: ":([^!]+)!([^@]+@\\S+)\\sJOIN\\s(\\S+)\\s(\\S+)\\s:(\\S+)";
-	patterns->join = regcomp(":([^!]+)!(\\S+)\\sJOIN\\s:(\\S+)");
+	patterns->join = regcomp(":([^!]+)!(\\S+) JOIN :(\\S+)");
 	// Urls
-	// alt: "\\b((?:(?:([a-z][\\w\\.-]+:/{1,3})|www\\d{0,3}[.]|[a-z0-9.\\-]+[.][a-z]{2,4}/)(?:[^\\s()<>]+|\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\))+(?:\\(([^\\s()<>]+|(\\([^\\s()<>]+\\)))*\\)|\\}\\]|[^\\s`!()\\[\\]{};:'\".,<>?])|[a-z0-9.\\-+_]+@[a-z0-9.\\-]+[.][a-z]{1,5}[^\\s/`!()\\[\\]{};:'\".,<>?]))";
 	patterns->url = regcomp("(https?:\\/\\/\\S+)");
 	// HTML page titles
 	// alt: "<title>(.+)<\\/title>";
 	patterns->html_title = regcomp("<title>([^<]+)<\\/title>");
 	// Eightball
-	patterns->command_eightball = regcomp("!8ball ([^$]+)");
+	patterns->command_eightball = regcomp("!8ball ([^\r\n]+)");
 	// Uptime
 	patterns->command_uptime = regcomp("!uptime");
 	// Give operator status
 	patterns->command_op = regcomp("!op (\\S+)");
 	// Say command for the console
-	patterns->command_say = regcomp("say (\\S+) (.*)$");
+	patterns->command_say = regcomp("say (\\S+) ([^\r\n]+)");
 	// kick command for the console
-	patterns->command_kick = regcomp("kick (\\S+) (.+)$");
+	patterns->command_kick = regcomp("kick (\\S+) ?([^\r\n]+)");
 
 	// Timer
-	patterns->command_timer = regcomp("!timer (.+)");
+	patterns->command_timer = regcomp("!timer ([^\r\n]+)");
 	// time patterns
 	// {1w,1d,1h,1m,1s} message
-	patterns->time_offset = regcomp("^(\\d{1,4}) ?(w|d|h|m|s) (\\S+)");
+	patterns->time_offset = regcomp("^(\\d{1,4}) ?(w|d|h|m|s) ([^\r\n]+)");
 	// hh:mm message
-	patterns->time_hourminute = regcomp("^(\\d\\d?):(\\d\\d?) (\\S+)");
+	patterns->time_hourminute = regcomp("^(\\d\\d?):(\\d\\d?) ([^\r\n]+)");
 	// dd/mm-hh:mm message
-	patterns->time_timedate = regcomp("^(\\d\\d?)/(\\d\\d?)-(\\d\\d?):(\\d\\d?) (\\S+)");
+	patterns->time_timedate = regcomp("^(\\d\\d?)/(\\d\\d?)-(\\d\\d?):(\\d\\d?) ([^\r\n]+)");
 	// day-hh:mm message
-	patterns->time_daytime = regcomp("^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)-(\\d\\d?):(\\d\\d?) (\\S+)");
+	patterns->time_daytime = regcomp("^(monday|tuesday|wednesday|thursday|friday|saturdy|sunday|mon|tue|wed|thu|fri|sat|sun)-(\\d\\d?):(\\d\\d?) ([^\r\n]+)");
 }
 
 void free_patterns(struct patterns *patterns)
