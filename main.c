@@ -242,7 +242,9 @@ int main(int argc, char **argv)
 			printf(" >> Disconnected, reconnecting...\n");
 			close(socket_fd);
 			net_connect();
+			continue;
 		}
+
 		if (FD_ISSET(STDIN_FILENO, &socket_set)) {
 			if (fgets(input, BUFFER_SIZE, stdin) == NULL) {
 				printf(" >> Error while reading from stdin!\n");
@@ -303,6 +305,18 @@ int main(int argc, char **argv)
 			}
 			FD_SET(socket_fd, &socket_set);
 		} else {
+			recv_size = recv(socket_fd, buffer + buffer_length, BUFFER_SIZE - buffer_length - 1, 0);
+			if (recv_size <= 0) {
+				printf(" >> recv_size <= 0, assuming closed remote socket, reconnecting\n");
+				close(socket_fd);
+				printf("closed\n");
+				net_connect();
+				printf("reconnected\n");
+				continue;
+			}
+
+			buffer_length += recv_size;
+
 			if (buffer_length >= BUFFER_SIZE - 1) {
 				printf(" >> what the fuck, IRCd, a line longer than 4k? dropping some buffer\n");
 				memset(buffer, 0, BUFFER_SIZE);
@@ -310,16 +324,7 @@ int main(int argc, char **argv)
 				continue;
 			}
 
-			recv_size = recv(socket_fd, buffer + buffer_length, BUFFER_SIZE - buffer_length - 1, 0);
-			buffer_length += recv_size;
 			buffer[buffer_length] = '\0';
-			if (recv_size == 0) {
-				printf(" >> recv_size is 0, assuming closed remote socket, reconnecting\n");
-				close(socket_fd);
-				printf("closed\n");
-				net_connect();
-				printf("reconnected\n");
-			}
 			char *newlinepos = 0;
 			char *bufbegin = buffer;
 			while ((newlinepos = strchr(bufbegin, '\n'))) {

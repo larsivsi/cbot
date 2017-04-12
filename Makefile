@@ -5,7 +5,7 @@ LDFLAGS+=-lpcre -lpthread -lcurl -lpq -lc -L/lib/x86_64-linux-gnu -z relro
 ALL = cbot
 
 cbot: $(OBJECTS)
-	gcc -o $@ $^ $(LDFLAGS)
+	gcc -o $@ $^ $(CFLAGS) $(LDFLAGS)
 
 clean:
 	rm -f cbot $(OBJECTS)
