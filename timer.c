@@ -3,7 +3,6 @@
 #include <string.h>
 #include <pthread.h>
 #include <stdlib.h>
-#include <pcre.h>
 
 #include "timer.h"
 #include "common.h"
@@ -72,20 +71,23 @@ void set_timer(const char *nick, const char *channel, const char *message, unsig
 void timer_parse(const char *nick, const char *channel, const char *time_str)
 {
 	printf("timestr: %s\n", time_str);
-	int offsets[30];
-	int offsetcount = pcre_exec(patterns->time_offset, 0, time_str, strlen(time_str), 0, 0, offsets, 30);
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->time_offset, 0);
+	int offsetcount = pcre2_match(patterns->time_offset, (PCRE2_SPTR)time_str, strlen(time_str), 0, 0, match_data, 0);
 
 	time_t rawtime = time(NULL);
 	struct tm *current_time = localtime(&rawtime);
 
 	if (offsetcount == 4) {
 		char count_str[5];
-		pcre_copy_substring(time_str, offsets, offsetcount, 1, count_str, 5);
+		PCRE2_SIZE buf_size = 5;
+		pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)count_str, &buf_size);
 		unsigned long count = atoi(count_str);
 		char type[2];
-		pcre_copy_substring(time_str, offsets, offsetcount, 2, type, 2);
+		buf_size = 2;
+		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)type, &buf_size);
 		char message[TIMER_MESSAGE_SIZE];
-		pcre_copy_substring(time_str, offsets, offsetcount, 3, message, TIMER_MESSAGE_SIZE);
+		buf_size = TIMER_MESSAGE_SIZE;
+		pcre2_substring_copy_bynumber(match_data, 3, (PCRE2_UCHAR*)message, &buf_size);
 		unsigned long seconds;
 		switch(type[0]) {
 		case 'w':
@@ -110,14 +112,19 @@ void timer_parse(const char *nick, const char *channel, const char *time_str)
 		set_timer(nick, channel, message, seconds);
 		return;
 	}
-	offsetcount = pcre_exec(patterns->time_hourminute, 0, time_str, strlen(time_str), 0, 0, offsets, 30);
+	pcre2_match_data_free(match_data);
+	match_data = pcre2_match_data_create_from_pattern(patterns->time_hourminute, 0);
+	offsetcount = pcre2_match(patterns->time_hourminute, (PCRE2_SPTR)time_str, strlen(time_str), 0, 0, match_data, 0);
 	if (offsetcount == 4) {
 		char hour_str[3];
 		char minute_str[3];
 		char message[TIMER_MESSAGE_SIZE];
-		pcre_copy_substring(time_str, offsets, offsetcount, 1, hour_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 2, minute_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 3, message, TIMER_MESSAGE_SIZE);
+		PCRE2_SIZE buf_size = 3;
+		pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)hour_str, &buf_size);
+		buf_size = 3;
+		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)minute_str, &buf_size);
+		buf_size = TIMER_MESSAGE_SIZE;
+		pcre2_substring_copy_bynumber(match_data, 3, (PCRE2_UCHAR*)message, &buf_size);
 		int hour = atoi(hour_str);
 		if (hour > 23) {
 			printf("invalid hour: %s\n" , hour_str);
@@ -142,18 +149,25 @@ void timer_parse(const char *nick, const char *channel, const char *time_str)
 		set_timer(nick, channel, message, seconds);
 		return;
 	}
-	offsetcount = pcre_exec(patterns->time_timedate, 0, time_str, strlen(time_str), 0, 0, offsets, 30);
+	pcre2_match_data_free(match_data);
+	match_data = pcre2_match_data_create_from_pattern(patterns->time_timedate, 0);
+	offsetcount = pcre2_match(patterns->time_timedate, (PCRE2_SPTR)time_str, strlen(time_str), 0, 0, match_data, 0);
 	if (offsetcount == 6) {
 		char day_str[3];
 		char month_str[3];
 		char hour_str[3];
 		char minute_str[3];
 		char message[TIMER_MESSAGE_SIZE];
-		pcre_copy_substring(time_str, offsets, offsetcount, 1, day_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 2, month_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 3, hour_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 4, minute_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 5, message, TIMER_MESSAGE_SIZE);
+		PCRE2_SIZE buf_size = 3;
+		pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)day_str, &buf_size);
+		buf_size = 3;
+		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)month_str, &buf_size);
+		buf_size = 3;
+		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)hour_str, &buf_size);
+		buf_size = 3;
+		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)minute_str, &buf_size);
+		buf_size = TIMER_MESSAGE_SIZE;
+		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)message, &buf_size);
 		int day = atoi(day_str);
 		if (day > 31) {
 			printf("invalid day: %s\n", day_str);
@@ -190,16 +204,22 @@ void timer_parse(const char *nick, const char *channel, const char *time_str)
 		set_timer(nick, channel, message, seconds);
 		return;
 	}
-	offsetcount = pcre_exec(patterns->time_daytime, 0, time_str, strlen(time_str), 0, 0, offsets, 30);
+	pcre2_match_data_free(match_data);
+	match_data = pcre2_match_data_create_from_pattern(patterns->time_daytime, 0);
+	offsetcount = pcre2_match(patterns->time_daytime, (PCRE2_SPTR)time_str, strlen(time_str), 0, 0, match_data, 0);
 	if (offsetcount == 5) {
 		char day_str[16];
 		char hour_str[3];
 		char minute_str[3];
 		char message[TIMER_MESSAGE_SIZE];
-		pcre_copy_substring(time_str, offsets, offsetcount, 1, day_str, 16);
-		pcre_copy_substring(time_str, offsets, offsetcount, 2, hour_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 3, minute_str, 3);
-		pcre_copy_substring(time_str, offsets, offsetcount, 4, message, TIMER_MESSAGE_SIZE);
+		PCRE2_SIZE buf_size = 16;
+		pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)day_str, &buf_size);
+		buf_size = 3;
+		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)hour_str, &buf_size);
+		buf_size = 3;
+		pcre2_substring_copy_bynumber(match_data, 3, (PCRE2_UCHAR*)minute_str, &buf_size);
+		buf_size = TIMER_MESSAGE_SIZE;
+		pcre2_substring_copy_bynumber(match_data, 4, (PCRE2_UCHAR*)message, &buf_size);
 		int day;
 		for (day = 0; day < 7; day++) {
 			if (strncmp(day_str, days[day], 3) == 0) {
@@ -233,6 +253,7 @@ void timer_parse(const char *nick, const char *channel, const char *time_str)
 		set_timer(nick, channel, message, seconds);
 		return;
 	}
+	pcre2_match_data_free(match_data);
 	char buf[strlen(channel) + 37/*constant text*/ + 11 /*maximum length of the unsigned int*/];
 	sprintf(buf, "PRIVMSG %s :timer example: \"!timer 17m pizza!\", time syntax examples: 1d, 10m, 13:37, 24/12-13:37, monday-13:37\n", channel);
 	irc_send_str(buf);

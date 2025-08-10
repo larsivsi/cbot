@@ -6,7 +6,6 @@
 
 #include <curl/curl.h>
 #include <string.h>
-#include <pcre.h>
 
 #define HTTP_BUFFER 1024000 //100kb http buffer
 
@@ -75,7 +74,7 @@ void strip_newlines(char *str)
 }
 
 #define ANGRY_ROBOT "\342\224\227\133\302\251\040\342\231\222\040\302\251\135\342\224\233\040\357\270\265\040\342\224\273\342\224\201\342\224\273"
-char *fetch_url_and_match(const char *url, const pcre *pattern)
+char *fetch_url_and_match(const char *url, const pcre2_code *pattern)
 {
 	http_buffer_pos = 0;
 
@@ -101,16 +100,18 @@ char *fetch_url_and_match(const char *url, const pcre *pattern)
 		}
 	}
 
-	int res_buffers[30];
-	int resultcount = pcre_exec(pattern, 0, http_buffer, http_buffer_pos, 0, PCRE_NO_UTF8_CHECK, res_buffers, 30);
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(pattern, 0);
+	int resultcount = pcre2_match(pattern, (PCRE2_SPTR)http_buffer, http_buffer_pos, 0, PCRE2_NO_UTF_CHECK, match_data, 0);
 	if (resultcount > 0) {
-		pcre_copy_substring(http_buffer, res_buffers, resultcount, 1, result, BUFFER_SIZE);
+		PCRE2_SIZE buf_size = BUFFER_SIZE;
+		pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)result, &buf_size);
 		strip_newlines(result);
 		clean_spaces(result);
 		decode_html_entities_utf8(result, NULL);
 	} else {
 		result[0] = '\0'; // empty string
 	}
+	pcre2_match_data_free(match_data);
 	return result;
 }
 

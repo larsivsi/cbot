@@ -6,26 +6,27 @@
 
 extern int socket_fd;
 
-typedef struct real_pcre pcre;
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 struct patterns {
-	pcre *privmsg;
-	pcre *join;
-	pcre *kick;
-	pcre *url;
-	pcre *html_title;
+	pcre2_code *privmsg;
+	pcre2_code *join;
+	pcre2_code *kick;
+	pcre2_code *url;
+	pcre2_code *html_title;
 
-	pcre *command_eightball;
-	pcre *command_uptime;
-	pcre *command_say;
-	pcre *command_kick;
-	pcre *command_op;
+	pcre2_code *command_eightball;
+	pcre2_code *command_uptime;
+	pcre2_code *command_say;
+	pcre2_code *command_kick;
+	pcre2_code *command_op;
 
-	pcre *command_timer;
-	pcre *time_offset;
-	pcre *time_hourminute;
-	pcre *time_timedate;
-	pcre *time_daytime;
+	pcre2_code *command_timer;
+	pcre2_code *time_offset;
+	pcre2_code *time_hourminute;
+	pcre2_code *time_timedate;
+	pcre2_code *time_daytime;
 };
 extern struct patterns *patterns;
 void clean_spaces(char *str);

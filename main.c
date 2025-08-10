@@ -8,7 +8,8 @@
 #include "irc.h"
 #include "markov.h"
 
-#include <pcre.h>
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 #include <errno.h>
 #include <netdb.h>
 #include <stdio.h>
@@ -26,13 +27,15 @@ struct patterns *patterns;
 struct timeval t_begin, t_now;
 int socket_fd;
 
-pcre *regcomp(const char *pattern)
+pcre2_code *regcomp(const char *pattern)
 {
-	const char *pcre_err;
-	int pcre_err_offset;
-	pcre *ret = pcre_compile(pattern, PCRE_CASELESS | PCRE_UTF8 | PCRE_NO_UTF8_CHECK, &pcre_err, &pcre_err_offset, 0);
+	int pcre_errno;
+	PCRE2_SIZE pcre_err_offset;
+	pcre2_code *ret = pcre2_compile((PCRE2_SPTR)pattern, PCRE2_ZERO_TERMINATED, PCRE2_CASELESS | PCRE2_UTF | PCRE2_NO_UTF_CHECK, &pcre_errno, &pcre_err_offset, 0);
 	if (ret == 0) {
-		fprintf(stderr, "error while compiling pattern '%s', at %d: %s\n", pattern, pcre_err_offset, pcre_err);
+		PCRE2_UCHAR pcre_errmsg[256];
+		pcre2_get_error_message(pcre_errno, pcre_errmsg, sizeof(pcre_errmsg));
+		fprintf(stderr, "error while compiling pattern '%s', at %ld: %s\n", pattern, pcre_err_offset, pcre_errmsg);
 		exit(1);
 	}
 	return ret;
@@ -77,21 +80,21 @@ void compile_patterns(struct patterns *patterns)
 
 void free_patterns(struct patterns *patterns)
 {
-	pcre_free(patterns->privmsg);
-	pcre_free(patterns->kick);
-	pcre_free(patterns->join);
-	pcre_free(patterns->url);
-	pcre_free(patterns->html_title);
-	pcre_free(patterns->command_eightball);
-	pcre_free(patterns->command_uptime);
-	pcre_free(patterns->command_say);
-	pcre_free(patterns->command_kick);
-	pcre_free(patterns->command_op);
-	pcre_free(patterns->command_timer);
-	pcre_free(patterns->time_offset);
-	pcre_free(patterns->time_hourminute);
-	pcre_free(patterns->time_timedate);
-	pcre_free(patterns->time_daytime);
+	pcre2_code_free(patterns->privmsg);
+	pcre2_code_free(patterns->kick);
+	pcre2_code_free(patterns->join);
+	pcre2_code_free(patterns->url);
+	pcre2_code_free(patterns->html_title);
+	pcre2_code_free(patterns->command_eightball);
+	pcre2_code_free(patterns->command_uptime);
+	pcre2_code_free(patterns->command_say);
+	pcre2_code_free(patterns->command_kick);
+	pcre2_code_free(patterns->command_op);
+	pcre2_code_free(patterns->command_timer);
+	pcre2_code_free(patterns->time_offset);
+	pcre2_code_free(patterns->time_hourminute);
+	pcre2_code_free(patterns->time_timedate);
+	pcre2_code_free(patterns->time_daytime);
 }
 
 void die(const char *msg, const char *error)
@@ -277,29 +280,35 @@ int main(int argc, char **argv)
 				printf(" !!! Execvp failing, giving up...\n");
 				exit(-1);
 			} else if (strncmp(input, "say ", 4) == 0) {
-				int offsets[30];
-				int offsetcount = pcre_exec(patterns->command_say, 0, input, strlen(input), 0, 0, offsets, 30);
+				pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->command_say, 0);
+				int offsetcount = pcre2_match(patterns->command_say, (PCRE2_SPTR)input, strlen(input), 0, 0, match_data, 0);
 				if (offsetcount > 0) {
 					char channel[BUFFER_SIZE];
 					char message[BUFFER_SIZE];
-					pcre_copy_substring(input, offsets, offsetcount, 1, channel, BUFFER_SIZE);
-					pcre_copy_substring(input, offsets, offsetcount, 2, message, BUFFER_SIZE);
+					PCRE2_SIZE buf_size = BUFFER_SIZE;
+					pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)channel, &buf_size);
+					buf_size = BUFFER_SIZE;
+					pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)message, &buf_size);
 					char sendbuf[strlen("PRIVMSG  : ") + strlen(channel) + strlen(message)];
 					sprintf(sendbuf, "PRIVMSG %s :%s\n", channel, message);
 					irc_send_str(sendbuf);
 				}
+				pcre2_match_data_free(match_data);
 			} else if (strncmp(input, "kick ", 5) == 0) {
-				int offsets[30];
-				int offsetcount = pcre_exec(patterns->command_kick, 0, input, strlen(input), 0, 0, offsets, 30);
+				pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->command_kick, 0);
+				int offsetcount = pcre2_match(patterns->command_kick, (PCRE2_SPTR)input, strlen(input), 0, 0, match_data, 0);
 				if (offsetcount > 0) {
 					char channel[BUFFER_SIZE];
 					char user[BUFFER_SIZE];
-					pcre_copy_substring(input, offsets, offsetcount, 1, channel, BUFFER_SIZE);
-					pcre_copy_substring(input, offsets, offsetcount, 2, user, BUFFER_SIZE);
+					PCRE2_SIZE buf_size = BUFFER_SIZE;
+					pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)channel, &buf_size);
+					buf_size = BUFFER_SIZE;
+					pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)user, &buf_size);
 					char sendbuf[strlen("KICK   :Gene police! You! Out of the pool, now!\n") + strlen(channel) + strlen(user)];
 					sprintf(sendbuf, "KICK %s %s :Gene police! You! Out of the pool, now!\n", channel, user);
 					irc_send_str(sendbuf);
 				}
+				pcre2_match_data_free(match_data);
 			} else {
 				printf(" >> Unrecognized command. Try 'quit'\n");
 			}

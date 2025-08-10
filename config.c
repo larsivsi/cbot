@@ -2,7 +2,6 @@
 
 #include "common.h"
 
-#include <pcre.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -137,10 +136,10 @@ int load_config(const char *filename)
 		exit(1);
 	}
 
-	const char *pcre_err;
-	int pcre_err_off;
-	pcre *pattern;
-	if ((pattern = pcre_compile("(\\w+)\\s*=\\s*(.+)", PCRE_CASELESS | PCRE_UTF8, &pcre_err, &pcre_err_off, 0)) == NULL) {
+	int pcre_errno;
+	PCRE2_SIZE pcre_err_offset;
+	pcre2_code *pattern;
+	if ((pattern = pcre2_compile((PCRE2_SPTR)"(\\w+)\\s*=\\s*(.+)", PCRE2_ZERO_TERMINATED, PCRE2_CASELESS | PCRE2_UTF, &pcre_errno, &pcre_err_offset, 0)) == NULL) {
 		printf("Could not compile config pattern\n");
 		exit(1);
 	}
@@ -149,12 +148,13 @@ int load_config(const char *filename)
 	char *parameter = malloc(BUFFER_SIZE);
 	char *value = malloc(BUFFER_SIZE);
 	while(read_line(config_file, line) == 0) {
-		// TODO: check 30
-		int offsets[30];
-		int offsetcount = pcre_exec(pattern, 0, line, strlen(line), 0, 0, offsets, 30);
+		pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(pattern, 0);
+		int offsetcount = pcre2_match(pattern, (PCRE2_SPTR)line, strlen(line), 0, 0, match_data, 0);
 		if (offsetcount == 3) {
-			pcre_copy_substring(line, offsets, offsetcount, 1, parameter, BUFFER_SIZE);
-			pcre_copy_substring(line, offsets, offsetcount, 2, value, BUFFER_SIZE);
+			PCRE2_SIZE buf_size = BUFFER_SIZE;
+			pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)parameter, &buf_size);
+			buf_size = BUFFER_SIZE;
+			pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)value, &buf_size);
 			set_config_param(parameter, value);
 		}
 		else {
@@ -163,7 +163,7 @@ int load_config(const char *filename)
 		}
 	}
 
-	pcre_free(pattern);
+	pcre2_code_free(pattern);
 	free(line);
 	free(parameter);
  	free(value);

@@ -8,7 +8,6 @@
 #include "markov.h"
 
 #include <errno.h>
-#include <pcre.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -66,16 +65,21 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		return 0;
 	}
 	// Normal message
-	//TODO: check 30
-	int offsets[30];
-	int offsetcount = pcre_exec(patterns->privmsg, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->privmsg, 0);
+	int offsetcount = pcre2_match(patterns->privmsg, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
 	if (offsetcount == 7) {
-		pcre_copy_substring(msg, offsets, offsetcount, 1, in->nick, 32);
-		pcre_copy_substring(msg, offsets, offsetcount, 2, in->ident, 256);
-		pcre_copy_substring(msg, offsets, offsetcount, 3, in->user, 32);
-		pcre_copy_substring(msg, offsets, offsetcount, 4, in->server, 64);
-		pcre_copy_substring(msg, offsets, offsetcount, 5, in->channel, 32);
-		pcre_copy_substring(msg, offsets, offsetcount, 6, in->message, BUFFER_SIZE);
+		PCRE2_SIZE buf_size = 32;
+		pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)in->nick, &buf_size);
+		buf_size = 256;
+		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)in->ident, &buf_size);
+		buf_size = 32;
+		pcre2_substring_copy_bynumber(match_data, 3, (PCRE2_UCHAR*)in->user, &buf_size);
+		buf_size = 64;
+		pcre2_substring_copy_bynumber(match_data, 4, (PCRE2_UCHAR*)in->server, &buf_size);
+		buf_size = 32;
+		pcre2_substring_copy_bynumber(match_data, 5, (PCRE2_UCHAR*)in->channel, &buf_size);
+		buf_size = BUFFER_SIZE;
+		pcre2_substring_copy_bynumber(match_data, 6, (PCRE2_UCHAR*)in->message, &buf_size);
 		// In case of privmsgs ### fuck privmsgs for now -- sandsmark
 /*		if (strcmp(in->channel, config->nick) == 0) {
 			printf("%s : %s \n", in->channel, in->nick);
@@ -85,14 +89,21 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 		return 1;
 	}
 	// Kick
-	offsetcount = pcre_exec(patterns->kick, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	pcre2_match_data_free(match_data);
+	match_data = pcre2_match_data_create_from_pattern(patterns->kick, 0);
+	offsetcount = pcre2_match(patterns->kick, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
 	if (offsetcount == 6) {
-		pcre_copy_substring(msg, offsets, offsetcount, 1, in->nick, 32);
-		pcre_copy_substring(msg, offsets, offsetcount, 2, in->user, 32);
-		pcre_copy_substring(msg, offsets, offsetcount, 3, in->server, 64);
-		pcre_copy_substring(msg, offsets, offsetcount, 4, in->channel, 32);
+		PCRE2_SIZE buf_size = 32;
+		pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)in->nick, &buf_size);
+		buf_size = 32;
+		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)in->user, &buf_size);
+		buf_size = 64;
+		pcre2_substring_copy_bynumber(match_data, 3, (PCRE2_UCHAR*)in->server, &buf_size);
+		buf_size = 32;
+		pcre2_substring_copy_bynumber(match_data, 4, (PCRE2_UCHAR*)in->channel, &buf_size);
 		// Check if we got kicked
-		pcre_copy_substring(msg, offsets, offsetcount, 5, in->message, 32);
+		buf_size = 32;
+		pcre2_substring_copy_bynumber(match_data, 5, (PCRE2_UCHAR*)in->message, &buf_size);
 		if (strcmp(in->message, config->nick) == 0) {
 			printf("Got kicked, rejoining\n");
 			char rejoin[40];
@@ -148,14 +159,19 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	}
 
 	// Join
-	offsetcount = pcre_exec(patterns->join, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	pcre2_match_data_free(match_data);
+	match_data = pcre2_match_data_create_from_pattern(patterns->join, 0);
+	offsetcount = pcre2_match(patterns->join, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
 	if (offsetcount > 0) {
 		char nick[BUFFER_SIZE];
 		char identity[BUFFER_SIZE];
 		char channel[BUFFER_SIZE];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, nick, BUFFER_SIZE);
-		pcre_copy_substring(msg, offsets, offsetcount, 2, identity, BUFFER_SIZE);
-		pcre_copy_substring(msg, offsets, offsetcount, 3, channel, BUFFER_SIZE);
+		PCRE2_SIZE buf_size = BUFFER_SIZE;
+		pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)nick, &buf_size);
+		buf_size = BUFFER_SIZE;
+		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)identity, &buf_size);
+		buf_size = BUFFER_SIZE;
+		pcre2_substring_copy_bynumber(match_data, 3, (PCRE2_UCHAR*)channel, &buf_size);
 
 		if (db_user_is_op(identity, channel)) {
 			char buf[strlen("MODE  +o \n") + strlen(channel) + strlen(nick) + 1]; // + 1 for terminating null byte
@@ -163,6 +179,7 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 			irc_send_str(buf);
 		}
 	}
+	pcre2_match_data_free(match_data);
 	return 0;
 }
 
@@ -224,44 +241,55 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 	}
 
 	const char *msg = in->message;
-	int offsets[30];
 	// Check URLs
 	if (config->enabled_modules & MODULE_URLS) {
-		int offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), 0, 0, offsets, 30);
+		pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->url, 0);
+		int offsetcount = pcre2_match(patterns->url, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
 		while (offsetcount > 0) {
 			char url[BUFFER_SIZE];
-			pcre_copy_substring(msg, offsets, offsetcount, 1, url, BUFFER_SIZE);
+			PCRE2_SIZE buf_size = BUFFER_SIZE;
+			pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)url, &buf_size);
 			get_title_from_url(in, url);
 			if (config->enabled_modules & MODULE_LOG) {
 				log_url(in, url);
 			}
-			offsetcount = pcre_exec(patterns->url, 0, msg, strlen(msg), offsets[1], 0, offsets, 30);
+			PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
+			/* ovector[0] and ovector[1] are the start/end of the full match, so first offset is at index 2 */
+			offsetcount = pcre2_match(patterns->url, (PCRE2_SPTR)msg, strlen(msg), ovector[2], 0, match_data, 0);
 		}
+		pcre2_match_data_free(match_data);
 	}
 
 	// 8ball
 	if (config->enabled_modules & MODULE_EIGHTBALL) {
-		int offsetcount = pcre_exec(patterns->command_eightball, 0, msg, strlen(msg), 0, 0, offsets, 30);
+		pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->command_eightball, 0);
+		int offsetcount = pcre2_match(patterns->command_eightball, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
 		if (offsetcount > 0) {
 			char arguments[BUFFER_SIZE];
-			pcre_copy_substring(msg, offsets, offsetcount, 1, arguments, BUFFER_SIZE);
+			PCRE2_SIZE buf_size = BUFFER_SIZE;
+			pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)arguments, &buf_size);
 			eightball(in, arguments);
 		}
+		pcre2_match_data_free(match_data);
 	}
 
 	// Timer
 	if (config->enabled_modules & MODULE_TIMER) {
-		int offsetcount = pcre_exec(patterns->command_timer, 0, msg, strlen(msg), 0, 0, offsets, 30);
+		pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->command_timer, 0);
+		int offsetcount = pcre2_match(patterns->command_timer, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
 		if (offsetcount > 0) {
 			// We limit at 4 digits
 			char time[BUFFER_SIZE];
-			pcre_copy_substring(msg, offsets, offsetcount, 1, time, BUFFER_SIZE);
+			PCRE2_SIZE buf_size = BUFFER_SIZE;
+			pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)time, &buf_size);
 			timer_parse(in->nick, in->channel, time);
 		}
+		pcre2_match_data_free(match_data);
 	}
 
 	// Uptime
-	int offsetcount = pcre_exec(patterns->command_uptime, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->command_uptime, 0);
+	int offsetcount = pcre2_match(patterns->command_uptime, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
 	if (offsetcount > 0) {
 		long elapsed_secs = toc() / 1000000;
 		char *buf = (char*)malloc(BUFFER_SIZE);
@@ -273,18 +301,22 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 		free(buf);
 		free(stf);
 	}
+	pcre2_match_data_free(match_data);
 
 	// Give operator status
-	offsetcount = pcre_exec(patterns->command_op, 0, msg, strlen(msg), 0, 0, offsets, 30);
+	match_data = pcre2_match_data_create_from_pattern(patterns->command_op, 0);
+	offsetcount = pcre2_match(patterns->command_op, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
 	if (offsetcount == 2 && db_user_is_op(in->ident, in->channel)) {
 		char nick[BUFFER_SIZE];
-		pcre_copy_substring(msg, offsets, offsetcount, 1, nick, BUFFER_SIZE);
+		PCRE2_SIZE buf_size = BUFFER_SIZE;
+		pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)nick, &buf_size);
 		db_user_add_op(nick, in->channel);
 
 		char buf[BUFFER_SIZE];
 		sprintf(buf, "MODE %s +o %s\n", in->channel, nick);
 		irc_send_str(buf);
 	}
+	pcre2_match_data_free(match_data);
 }
 
 
