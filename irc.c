@@ -162,7 +162,7 @@ int irc_parse_input(char *msg, struct recv_data *in, struct patterns *patterns)
 	pcre2_match_data_free(match_data);
 	match_data = pcre2_match_data_create_from_pattern(patterns->join, 0);
 	offsetcount = pcre2_match(patterns->join, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
-	if (offsetcount > 0) {
+	if (offsetcount == 4) {
 		char nick[BUFFER_SIZE];
 		char identity[BUFFER_SIZE];
 		char channel[BUFFER_SIZE];
@@ -263,7 +263,7 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 	if (config->enabled_modules & MODULE_EIGHTBALL) {
 		pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->command_eightball, 0);
 		int offsetcount = pcre2_match(patterns->command_eightball, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
-		if (offsetcount > 0) {
+		if (offsetcount == 2) {
 			char arguments[BUFFER_SIZE];
 			PCRE2_SIZE buf_size = BUFFER_SIZE;
 			pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)arguments, &buf_size);
@@ -276,7 +276,7 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 	if (config->enabled_modules & MODULE_TIMER) {
 		pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->command_timer, 0);
 		int offsetcount = pcre2_match(patterns->command_timer, (PCRE2_SPTR)msg, strlen(msg), 0, 0, match_data, 0);
-		if (offsetcount > 0) {
+		if (offsetcount == 2) {
 			// We limit at 4 digits
 			char time[BUFFER_SIZE];
 			PCRE2_SIZE buf_size = BUFFER_SIZE;

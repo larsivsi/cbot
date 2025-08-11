@@ -102,7 +102,7 @@ char *fetch_url_and_match(const char *url, const pcre2_code *pattern)
 
 	pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(pattern, 0);
 	int resultcount = pcre2_match(pattern, (PCRE2_SPTR)http_buffer, http_buffer_pos, 0, PCRE2_NO_UTF_CHECK, match_data, 0);
-	if (resultcount > 0) {
+	if (resultcount == 2) {
 		PCRE2_SIZE buf_size = BUFFER_SIZE;
 		pcre2_substring_copy_bynumber(match_data, 1, (PCRE2_UCHAR*)result, &buf_size);
 		strip_newlines(result);

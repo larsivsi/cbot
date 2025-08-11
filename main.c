@@ -282,7 +282,7 @@ int main(int argc, char **argv)
 			} else if (strncmp(input, "say ", 4) == 0) {
 				pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->command_say, 0);
 				int offsetcount = pcre2_match(patterns->command_say, (PCRE2_SPTR)input, strlen(input), 0, 0, match_data, 0);
-				if (offsetcount > 0) {
+				if (offsetcount == 3) {
 					char channel[BUFFER_SIZE];
 					char message[BUFFER_SIZE];
 					PCRE2_SIZE buf_size = BUFFER_SIZE;
@@ -297,7 +297,7 @@ int main(int argc, char **argv)
 			} else if (strncmp(input, "kick ", 5) == 0) {
 				pcre2_match_data *match_data = pcre2_match_data_create_from_pattern(patterns->command_kick, 0);
 				int offsetcount = pcre2_match(patterns->command_kick, (PCRE2_SPTR)input, strlen(input), 0, 0, match_data, 0);
-				if (offsetcount > 0) {
+				if (offsetcount == 3) {
 					char channel[BUFFER_SIZE];
 					char user[BUFFER_SIZE];
 					PCRE2_SIZE buf_size = BUFFER_SIZE;
