@@ -254,8 +254,7 @@ void irc_handle_input(struct recv_data *in, struct patterns *patterns)
 				log_url(in, url);
 			}
 			PCRE2_SIZE *ovector = pcre2_get_ovector_pointer(match_data);
-			/* ovector[0] and ovector[1] are the start/end of the full match, so first offset is at index 2 */
-			offsetcount = pcre2_match(patterns->url, (PCRE2_SPTR)msg, strlen(msg), ovector[2], 0, match_data, 0);
+			offsetcount = pcre2_match(patterns->url, (PCRE2_SPTR)msg, strlen(msg), ovector[1], 0, match_data, 0);
 		}
 		pcre2_match_data_free(match_data);
 	}
