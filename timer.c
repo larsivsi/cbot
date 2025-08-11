@@ -163,11 +163,11 @@ void timer_parse(const char *nick, const char *channel, const char *time_str)
 		buf_size = 3;
 		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)month_str, &buf_size);
 		buf_size = 3;
-		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)hour_str, &buf_size);
+		pcre2_substring_copy_bynumber(match_data, 3, (PCRE2_UCHAR*)hour_str, &buf_size);
 		buf_size = 3;
-		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)minute_str, &buf_size);
+		pcre2_substring_copy_bynumber(match_data, 4, (PCRE2_UCHAR*)minute_str, &buf_size);
 		buf_size = TIMER_MESSAGE_SIZE;
-		pcre2_substring_copy_bynumber(match_data, 2, (PCRE2_UCHAR*)message, &buf_size);
+		pcre2_substring_copy_bynumber(match_data, 5, (PCRE2_UCHAR*)message, &buf_size);
 		int day = atoi(day_str);
 		if (day > 31) {
 			printf("invalid day: %s\n", day_str);
